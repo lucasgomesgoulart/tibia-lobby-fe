@@ -1,0 +1,31 @@
+/* Layout Principal */
+.page-container {
+  display: flex;
+  height: 100vh;          /* Ocupa toda a altura da tela */
+  overflow: hidden;        /* Evita rolagem desnecessária */
+  background: transparent; /* Para manter o fundo visível */
+}
+
+/* Área do Conteúdo */
+.content {
+  flex: 1;                 /* O conteúdo ocupa todo o espaço restante */
+  display: flex;
+  flex-direction: column;
+  background-color: transparent;
+  padding: 20px;
+  box-sizing: border-box;
+  overflow-y: auto;        /* Permite rolagem se o conteúdo for maior que a tela */
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  height: 60px;
+  background-color: transparent;
+  padding: 0 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Botão do Trigger da Sidebar */
+
