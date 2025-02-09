@@ -32,6 +32,8 @@ interface LobbyCardProps {
   lobby: Lobby;
 }
 
+
+
 // Função para retornar a imagem correta com base na vocação
 const getOutfitImage = (vocation: string) => {
   switch (vocation.toLowerCase()) {
@@ -54,7 +56,7 @@ export default function LobbyCard({ lobby }: LobbyCardProps) {
   return (
     <Card className="relative p-4 shadow-xl rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 text-white border border-gray-700 ">
       <h2 className="text font-bold mb-2 text-center uppercase ">{lobby.title}</h2>
-      
+
       <div className="flex justify-between text-sm mb-4">
         <div className="flex items-center gap-1">
           <Users className="h-4 w-4" />
@@ -80,18 +82,22 @@ export default function LobbyCard({ lobby }: LobbyCardProps) {
         {lobby.players.map((player, index) => (
           <div key={index} className="flex items-center justify-between bg-gray-800 p-2 rounded-md">
             <div className="flex items-center gap-2">
-              <img 
-                src={getOutfitImage(player.character.vocation).src} 
-                alt={player.character.vocation} 
-                className="h-10 w-10" 
+              <img
+                src={getOutfitImage(player.character.vocation).src}
+                alt={player.character.vocation}
+                className="h-10 w-10"
               />
-              <span>{player.character.name}</span>
+              <span className="blurred-name">{player.character.name}</span>
             </div>
             <span className="text-sm text-gray-400">{player.character.vocation}</span>
           </div>
         ))}
       </div>
+      <div>
+        <p>
 
+        </p>
+      </div>
       <div className="flex justify-between mt-4 text-xs">
         <a
           href={lobby.discordChannelLink}
@@ -102,6 +108,14 @@ export default function LobbyCard({ lobby }: LobbyCardProps) {
           Acessar Discord
         </a>
       </div>
+
+      <style jsx>{`
+        .blurred-name {
+          filter: blur(5px);
+          user-select: none;
+          pointer-events: none;
+        }
+      `}</style>
     </Card>
   );
 }

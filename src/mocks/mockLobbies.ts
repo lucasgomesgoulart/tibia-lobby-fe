@@ -77,7 +77,7 @@ export const mockLobbies = [
       { character: { name: "Thalia", vocation: "DRUID" } }
     ]
   },{
-    id: "5",
+    id: "6",
     title: "Epic Boss Gauntlet",
     minLevel: 180,
     maxLevel: 350,
@@ -91,7 +91,7 @@ export const mockLobbies = [
       { character: { name: "Thalia", vocation: "DRUID" } }
     ]
   },{
-    id: "5",
+    id: "7",
     title: "Epic Boss Gauntlet",
     minLevel: 180,
     maxLevel: 350,
@@ -105,7 +105,7 @@ export const mockLobbies = [
       { character: { name: "Thalia", vocation: "DRUID" } }
     ]
   },{
-    id: "5",
+    id: "8",
     title: "Epic Boss Gauntlet",
     minLevel: 180,
     maxLevel: 350,
