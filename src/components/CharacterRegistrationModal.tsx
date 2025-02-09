@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,47 +8,26 @@ import { Checkbox } from "@/components/ui/checkbox";
 import API_BASE_URL from "@/apiConfig.js";
 import { ImSpinner2 } from 'react-icons/im';
 
-interface Vocation {
-  name: 'SORCERER' | 'DRUID' | 'PALADIN' | 'KNIGHT';
-  image: string;
-}
-
-interface World {
-  id: string;
-  name: string;
-}
-
-interface OtServer {
-  id: string;
-  name: string;
-  worlds: World[];
-}
-
-interface CharacterRegistrationModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
-
-const vocations: Vocation[] = [
+const vocations = [
   { name: 'SORCERER', image: '/images/outfits/mage.png' },
   { name: 'DRUID', image: '/images/outfits/druid.png' },
   { name: 'PALADIN', image: '/images/outfits/hunter.png' },
   { name: 'KNIGHT', image: '/images/outfits/knight.png' },
 ];
 
-export default function CharacterRegistrationModal({ isOpen, onClose }: CharacterRegistrationModalProps) {
-  const [name, setName] = useState<string>('');
-  const [serverType, setServerType] = useState<'GLOBAL' | 'OTSERVER'>('GLOBAL');
-  const [selectedVocation, setSelectedVocation] = useState<string>('');
-  const [worlds, setWorlds] = useState<World[]>([]);
-  const [otServers, setOtServers] = useState<OtServer[]>([]);
-  const [selectedWorld, setSelectedWorld] = useState<string>('');
-  const [selectedWorldId, setSelectedWorldId] = useState<string>('');
-  const [selectedOtServer, setSelectedOtServer] = useState<string>('');
-  const [selectedOtServerWorld, setSelectedOtServerWorld] = useState<string>('');
-  const [otServerWorlds, setOtServerWorlds] = useState<World[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [level, setLevel] = useState<number>(0);
+export default function CharacterRegistrationModal({ isOpen, onClose }) {
+  const [name, setName] = useState('');
+  const [serverType, setServerType] = useState('GLOBAL');
+  const [selectedVocation, setSelectedVocation] = useState('');
+  const [worlds, setWorlds] = useState([]);
+  const [otServers, setOtServers] = useState([]);
+  const [selectedWorld, setSelectedWorld] = useState('');
+  const [selectedWorldId, setSelectedWorldId] = useState('');
+  const [selectedOtServer, setSelectedOtServer] = useState('');
+  const [selectedOtServerWorld, setSelectedOtServerWorld] = useState('');
+  const [otServerWorlds, setOtServerWorlds] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [level, setLevel] = useState(0);
 
   useEffect(() => {
     const fetchWorldsAndOtServers = async () => {
@@ -71,25 +50,25 @@ export default function CharacterRegistrationModal({ isOpen, onClose }: Characte
     fetchWorldsAndOtServers();
   }, []);
 
-  const handleOtServerChange = (e: ChangeEvent<HTMLSelectElement>) => {
+  const handleOtServerChange = (e) => {
     const selectedServerId = e.target.value;
     setSelectedOtServer(selectedServerId);
     const selectedServer = otServers.find(server => server.id === selectedServerId);
     setOtServerWorlds(selectedServer ? selectedServer.worlds : []);
   };
 
-  const handleWorldChange = (e: ChangeEvent<HTMLSelectElement>) => {
+  const handleWorldChange = (e) => {
     const worldId = e.target.value;
     setSelectedWorldId(worldId);
     const world = worlds.find(w => w.id === worldId);
     setSelectedWorld(world ? world.name : '');
   };
 
-  const handleOtServerWorldChange = (e: ChangeEvent<HTMLSelectElement>) => {
+  const handleOtServerWorldChange = (e) => {
     setSelectedOtServerWorld(e.target.value);
   };
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const token = localStorage.getItem('token');
@@ -101,37 +80,96 @@ export default function CharacterRegistrationModal({ isOpen, onClose }: Characte
 
     setIsLoading(true);
 
-    const payload = {
-      name,
-      serverType,
-      vocation: selectedVocation,
-      level,
-      worldId: serverType === 'GLOBAL' ? selectedWorldId : undefined,
-      otServerId: serverType === 'OTSERVER' ? selectedOtServer : undefined,
-      otServerWorldId: serverType === 'OTSERVER' ? selectedOtServerWorld : undefined,
-    };
+    if (serverType === 'GLOBAL') {
+      try {
+        const response = await fetch(`https://api.tibiadata.com/v4/character/${name}`);
+        const data = await response.json();
 
-    try {
-      const response = await fetch(`${API_BASE_URL}/characters`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(payload)
-      });
+        if (data && data.character && data.character.character) {
+          const tibiaCharacter = data.character.character;
+          const tibiaVocation = tibiaCharacter.vocation;
+          const tibiaWorld = tibiaCharacter.world;
+          const vocationMap = {
+            'Elder Druid': 'DRUID',
+            'Druid': 'DRUID',
+            'Master Sorcerer': 'SORCERER',
+            'Sorcerer': 'SORCERER',
+            'Royal Paladin': 'PALADIN',
+            'Paladin': 'PALADIN',
+            'Elite Knight': 'KNIGHT',
+            'Knight': 'KNIGHT'
+          };
 
-      if (response.ok) {
-        alert('Personagem cadastrado com sucesso.');
-        onClose();
-      } else {
-        alert('Erro ao cadastrar o personagem.');
+          const normalizedVocation = vocationMap[tibiaVocation];
+
+          if (normalizedVocation !== selectedVocation) {
+            alert(`A vocação do personagem é ${normalizedVocation}, mas você selecionou ${selectedVocation}.`);
+            setIsLoading(false);
+            return;
+          }
+
+          if (tibiaWorld.toLowerCase() !== selectedWorld.toLowerCase()) {
+            alert(`O mundo do personagem é ${tibiaWorld}, mas você selecionou ${selectedWorld}.`);
+            setIsLoading(false);
+            return;
+          }
+
+          setLevel(tibiaCharacter.level);
+
+          const payload = {
+            name,
+            serverType,
+            vocation: selectedVocation,
+            level: tibiaCharacter.level,
+            worldId: serverType === 'GLOBAL' ? selectedWorldId : undefined,
+            otServerId: serverType === 'OTSERVER' ? selectedOtServer : undefined,
+            otServerWorldId: serverType === 'OTSERVER' ? selectedOtServerWorld : undefined,
+          };
+
+          try {
+            const response = await fetch(`${API_BASE_URL}/characters`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+              },
+              body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+              console.log('Personagem cadastrado com sucesso.');
+              alert('Personagem cadastrado com sucesso.');
+
+              setName('');
+              setServerType('GLOBAL');
+              setSelectedVocation('');
+              setSelectedWorld('');
+              setSelectedWorldId('');
+              setSelectedOtServer('');
+              setOtServerWorlds([]);
+
+              onClose();
+            } else {
+              console.error('Erro ao cadastrar o personagem.');
+              alert('Erro ao cadastrar o personagem.');
+            }
+          } catch (error) {
+            console.error('Erro na requisição:', error);
+            alert('Erro na requisição para cadastrar o personagem.');
+          } finally {
+            setIsLoading(false);
+          }
+        } else {
+          alert('Personagem não encontrado no TibiaData.');
+          setIsLoading(false);
+          return;
+        }
+      } catch (error) {
+        console.error('Erro ao buscar informações do personagem:', error);
+        alert('Erro ao buscar informações do personagem no TibiaData.');
+        setIsLoading(false);
+        return;
       }
-    } catch (error) {
-      console.error('Erro na requisição:', error);
-      alert('Erro na requisição para cadastrar o personagem.');
-    } finally {
-      setIsLoading(false);
     }
   };
 
