@@ -16,7 +16,7 @@ const menuItems = [
     icon: Gamepad2,
     items: [
       { title: "Criar Lobby", url: "/lobbies/create" },
-      { title: "Procurar Lobby", url: "/lobbies/" },
+      { title: "Procurar Lobby", url: "/" },
     ],
   },
   {
@@ -35,7 +35,7 @@ const menuItems = [
   {
     title: "Configurações",
     icon: Settings,
-    items: [{ title: "Perfil", url: "/settings/profile" }],
+    items: [{ title: "Perfil", url: "/profile" }],
   },
 ];
 
@@ -44,11 +44,11 @@ export default function Header() {
     <header className="fixed top-0 left-0 right-0 bg-black text-white shadow-md z-50">
       <nav className="flex justify-between items-center p-4">
         <div className="flex items-center gap-2 cursor-pointer hover:text-blue-400">
-          {/* <img
+          <img
             src="/avatars/default.png"
             alt="Avatar"
             className="w-8 h-8 rounded-full border border-gray-400"
-          /> */}
+          />
           <span className="font-semibold">Minha Conta</span>
         </div>
 
