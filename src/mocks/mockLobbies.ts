@@ -27,6 +27,13 @@ export const mockLobbies = [
     created_at: "2025-02-07T14:30:00.000Z",
     players: [
       { character: { name: "Varyn", vocation: "SORCERER" } },
+      { character: { name: "Varyn", vocation: "SORCERER" } },
+      { character: { name: "Varyn", vocation: "SORCERER" } },
+      { character: { name: "Varyn", vocation: "SORCERER" } },
+      { character: { name: "Lyssa", vocation: "DRUID" } },
+      { character: { name: "Lyssa", vocation: "DRUID" } },
+      { character: { name: "Lyssa", vocation: "DRUID" } },
+      { character: { name: "Lyssa", vocation: "DRUID" } },
       { character: { name: "Lyssa", vocation: "DRUID" } }
     ]
   },
@@ -101,6 +108,8 @@ export const mockLobbies = [
     discordChannelLink: "https://discord.gg/epicboss",
     created_at: "2025-02-09T13:00:00.000Z",
     players: [
+      { character: { name: "Zephyr", vocation: "PALADIN" } },
+      { character: { name: "Zephyr", vocation: "PALADIN" } },
       { character: { name: "Zephyr", vocation: "PALADIN" } },
       { character: { name: "Zephyr", vocation: "PALADIN" } },
     ]

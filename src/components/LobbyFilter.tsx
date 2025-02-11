@@ -1,10 +1,11 @@
 'use client';
 
+import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
-import { FaUser, FaHatWizard, FaGlobe, FaServer, FaLevelUpAlt, FaTrash, FaFilter, FaSearch, FaTimesCircle } from 'react-icons/fa';
+import { FaFilter, FaSearch, FaTimesCircle } from 'react-icons/fa';
 import API_BASE_URL from "@/apiConfig";
 
 interface LobbyFilters {
@@ -21,6 +22,7 @@ export default function LobbyFiltersComponent({ onFilter }: { onFilter: (filtere
   const [filters, setFilters] = useState<LobbyFilters>({});
   const [showFilters, setShowFilters] = useState(false);
   const [activityTypes, setActivityTypes] = useState<string[]>([]);
+  const [parent] = useAutoAnimate();
 
   useEffect(() => {
     const fetchActivityTypes = async () => {
@@ -79,22 +81,22 @@ export default function LobbyFiltersComponent({ onFilter }: { onFilter: (filtere
   };
 
   return (
-    <div className="p-1 bg-gray-900 text-white rounded-md shadow-lg">
+    <div ref={parent} className="p-1 bg-gray-900 text-white rounded-md shadow-lg  ml-4">
       <div className="flex gap-2">
-        <Button className="bg-gray-800 text-white hover:bg-gray-600 transition duration-300" size="icon" onClick={() => setShowFilters(!showFilters)}>
+        <Button className="bg-gray-800 text-white hover:bg-gray-600" size="icon" onClick={() => setShowFilters(!showFilters)}>
           <FaFilter />
         </Button>
-        <Button className="bg-red-600 text-white hover:bg-red-800 transition duration-300" size="icon" onClick={clearFilters}>
+        <Button className="bg-red-600 text-white hover:bg-red-800" size="icon" onClick={clearFilters}>
           <FaTimesCircle />
         </Button>
-        <Button className="bg-blue-600 text-white hover:bg-blue-800 transition duration-300" size="icon" onClick={handleSearch}>
+        <Button className="bg-blue-600 text-white hover:bg-blue-800" size="icon" onClick={handleSearch}>
           <FaSearch />
         </Button>
       </div>
 
       {showFilters && (
-        <div className="grid grid-cols-2 gap-4 bg-gray-800 p-4 rounded-md shadow-md">
-          <Input name="title" placeholder="Título da Lobby" onChange={handleChange} className="w-full bg-gray-700 text-white" />
+        <div className="grid grid-cols-2 gap-4 bg-gray-800 p-4 rounded-md shadow-md mt-3 mb-1">
+          <Input name="title" placeholder='Título da lobby' onChange={handleChange} className="w-full bg-gray-700" />
 
           <div>
             <select name="activityType" onChange={handleChange} className="w-full bg-gray-700 text-white p-2 rounded-md">
@@ -115,7 +117,7 @@ export default function LobbyFiltersComponent({ onFilter }: { onFilter: (filtere
             <Slider defaultValue={[20]} max={20} step={1} onValueChange={(value) => handleRangeChange(value, 'maxPlayers')} />
           </div>
 
-          <Input type="number" name="minLevel" placeholder="Nível Mínimo" onChange={handleChange} className="w-full bg-gray-700 text-white" />
+          <Input type="number" name="minLevel" placeholder="Nível Mínimo" onChange={handleChange} className="w-full bg-gray-700 text-white " />
           <Input type="number" name="maxLevel" placeholder="Nível Máximo" onChange={handleChange} className="w-full bg-gray-700 text-white" />
         </div>
       )}

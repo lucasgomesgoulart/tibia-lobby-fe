@@ -15,7 +15,7 @@ const menuItems = [
     title: "Jogar Agora",
     icon: Gamepad2,
     items: [
-      { title: "Criar Lobby", url: "/lobbies/create" },
+
       { title: "Procurar Lobby", url: "/" },
     ],
   },

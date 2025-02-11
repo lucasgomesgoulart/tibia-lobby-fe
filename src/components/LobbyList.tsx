@@ -15,8 +15,8 @@ export default function LobbyList() {
   return (
     <div className="space-y-4">
       <LobbyFilter onFilter={handleFilterResults} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 w-full max-w-[1440px] mx-auto">
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 w-full">
         {lobbies.map((lobby) => (
           <LobbyCard
             key={lobby.id}

@@ -40,7 +40,7 @@ export default function Layout({ children }: LayoutProps) {
         </div>
 
         {/* Área de Conteúdo Principal */}
-        <div className="w-3/4 p-4 relative z-10 h-full overflow-auto">
+        <div className="w-11/12 p-4 relative z-10 h-full overflow-auto">
           {children}
         </div>
       </div>
