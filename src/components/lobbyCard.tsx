@@ -52,8 +52,8 @@ export default function LobbyCard({ lobby }: LobbyCardProps) {
   const activePlayersCount = lobby.players.length;
 
   return (
-    <Card className="relative p-4 shadow-xl rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 text-white border border-gray-700 overflow-hidden ">
-      <img src={cardDourado.src} alt="Moldura Dourada" className="absolute inset-0 w-full h-full object-cover z-0 opacity-50" />
+    <Card className="relative p-4 pt-8  shadow-xl rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 text-white border border-gray-700 overflow-hidden ">
+      <img src={cardDourado.src} alt="Moldura Dourada" className="absolute inset-0  w-full h-full z-0 opacity-50" />
       <div className="relative z-10">
         <h2 className="font-bold mt-6 mb-2 text-center uppercase">{lobby.title}</h2>
 

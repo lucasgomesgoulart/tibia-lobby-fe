@@ -102,21 +102,8 @@ export const mockLobbies = [
     created_at: "2025-02-09T13:00:00.000Z",
     players: [
       { character: { name: "Zephyr", vocation: "PALADIN" } },
-      { character: { name: "Thalia", vocation: "DRUID" } }
-    ]
-  },{
-    id: "8",
-    title: "Epic Boss Gauntlet",
-    minLevel: 180,
-    maxLevel: 350,
-    maxPlayers: 4,
-    minPlayers: 2,
-    activityType: "BOSS",
-    discordChannelLink: "https://discord.gg/epicboss",
-    created_at: "2025-02-09T13:00:00.000Z",
-    players: [
       { character: { name: "Zephyr", vocation: "PALADIN" } },
-      { character: { name: "Thalia", vocation: "DRUID" } }
     ]
   },
+  
 ];

@@ -15,7 +15,7 @@ export default function Layout({ children }: LayoutProps) {
     <SidebarProvider>
       <Header /> {/* O Header fica fixo no topo da página */}
       <div
-        className="relative flex flex-1 pt-20 min-h-screen"
+        className="relative flex flex-1 pt-20 h-screen"
         style={{ backgroundColor: "#4a6283" }}
       >
         <div
@@ -40,7 +40,7 @@ export default function Layout({ children }: LayoutProps) {
         </div>
 
         {/* Área de Conteúdo Principal */}
-        <div className="w-3/4 p-4 relative z-10">
+        <div className="w-3/4 p-4 relative z-10 h-full overflow-auto">
           {children}
         </div>
       </div>
