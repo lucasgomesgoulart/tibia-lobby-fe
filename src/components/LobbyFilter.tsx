@@ -79,8 +79,8 @@ export default function LobbyFiltersComponent({ onFilter }: { onFilter: (filtere
   };
 
   return (
-    <div className="p-4 bg-gray-900 text-white rounded-md shadow-lg">
-      <div className="flex gap-2 mb-4">
+    <div className="p-1 bg-gray-900 text-white rounded-md shadow-lg">
+      <div className="flex gap-2">
         <Button className="bg-gray-800 text-white hover:bg-gray-600 transition duration-300" size="icon" onClick={() => setShowFilters(!showFilters)}>
           <FaFilter />
         </Button>

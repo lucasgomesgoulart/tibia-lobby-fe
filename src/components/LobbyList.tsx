@@ -13,11 +13,10 @@ export default function LobbyList() {
   };
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="space-y-4">
       <LobbyFilter onFilter={handleFilterResults} />
 
-      {/* ✅ Limitando a altura e controlando o overflow */}
-      <div className="max-h-[calc(2*300px+32px)] overflow-y-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 w-full">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 w-full">
         {lobbies.map((lobby) => (
           <LobbyCard
             key={lobby.id}

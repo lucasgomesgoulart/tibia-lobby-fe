@@ -7,7 +7,7 @@ import OutfitDruid from '../../public/images/outfits/druid.png';
 import OutfitHunter from '../../public/images/outfits/hunter.png';
 import OutfitKnight from '../../public/images/outfits/knight.png';
 import OutfitMage from '../../public/images/outfits/mage.png';
-import cardDourado from '../../public/images/cards/preto.png';
+import cardDourado from '../../public/images/cards/dourado.png';
 
 interface Player {
   character: {
@@ -52,12 +52,12 @@ export default function LobbyCard({ lobby }: LobbyCardProps) {
   const activePlayersCount = lobby.players.length;
 
   return (
-    <Card className="relative p-4 shadow-xl rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 text-white border border-gray-700 overflow-hidden">
-      <img src={cardDourado.src} alt="Moldura Dourada" className="absolute inset-0 w-full h-full object-cover z-0" />
+    <Card className="relative p-4 shadow-xl rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 text-white border border-gray-700 overflow-hidden ">
+      <img src={cardDourado.src} alt="Moldura Dourada" className="absolute inset-0 w-full h-full object-cover z-0 opacity-50" />
       <div className="relative z-10">
-        <h2 className="font-bold mb-2 text-center uppercase">{lobby.title}</h2>
+        <h2 className="font-bold mt-6 mb-2 text-center uppercase">{lobby.title}</h2>
 
-        <div className="flex justify-between text-sm mb-4">
+        <div className="flex justify-between text-sm mb-1">
           <div className="flex items-center gap-1">
             <Users className="h-4 w-4" />
             {activePlayersCount}/{lobby.maxPlayers} Jogadores
