@@ -1,113 +1,86 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Slider } from "@/components/ui/slider";
+import CreateLobbyButton from "@/components/CreateLobbyButton";
 import API_BASE_URL from "@/apiConfig";
 
-export default function CreateLobbyModal({ onLobbyCreated }: { onLobbyCreated: (lobby: any) => void }) {
-  const [formData, setFormData] = useState({
-    title: "",
-    minPlayers: 1,
-    maxPlayers: 4,
-    minLevel: 0,
-    maxLevel: 0,
-    activityType: "",
-  });
+interface Player {
+  character: {
+    name: string;
+    vocation: string;
+  };
+}
 
-  const [activityTypes, setActivityTypes] = useState<string[]>([]);
+interface Lobby {
+  id: string;
+  title: string;
+  activityType: string;
+  maxPlayers: number;
+  players: Player[];
+}
+
+export default function LobbySidebar() {
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [lobby, setLobby] = useState<Lobby | null>(null);
 
   useEffect(() => {
-    const fetchActivityTypes = async () => {
+    const token = localStorage.getItem("token");
+    setIsLoggedIn(!!token);
+
+    const fetchLobbyData = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/activeType`, {
+        const response = await fetch(`${API_BASE_URL}/lobby/my-lobby`, {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `Bearer ${token}`,
           },
         });
+
         const data = await response.json();
-        setActivityTypes(data);
+        setLobby(data.data);
       } catch (error) {
-        console.error("Erro ao buscar tipos de atividade:", error);
+        console.error("Erro ao buscar dados do lobby:", error);
       }
     };
 
-    fetchActivityTypes();
+    if (token) {
+      fetchLobbyData();
+    }
   }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSliderChange = (value: number[], field: "minPlayers" | "maxPlayers") => {
-    setFormData({ ...formData, [field]: value[0] });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const response = await fetch(`${API_BASE_URL}/lobbies`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-      onLobbyCreated(data); // Callback para atualizar a lista de lobbies
-    } catch (error) {
-      console.error("Erro ao criar lobby:", error);
-    }
-  };
-
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button className="bg-green-600 hover:bg-green-800">Criar Lobby</Button>
-      </DialogTrigger>
-      <DialogContent className="bg-white text-white p-6 rounded-md shadow-lg">
-        <DialogHeader >
-          <DialogTitle className="text-center text-2xl text-black font-bold mb-4">Criar Nova Lobby</DialogTitle>
-        </DialogHeader>
+    <div className="flex flex-col h-full m-5 relative">
+      <h2 className="text-white text-xl font-bold mb-4">Lobby</h2>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Input name="title" placeholder="Título da Lobby" onChange={handleChange} required className="bg-gray-700 text-white" />
+      {isLoggedIn ? (
+        lobby ? (
+          <div className="bg-gray-900 p-4 rounded-md text-white border border-gray-700">
+            <h3 className="text-lg font-semibold">{lobby.title}</h3>
+            <p className="text-sm text-gray-400">{lobby.activityType}</p>
+            <p className="text-xs text-gray-400">
+              Jogadores: {lobby.players.length}/{lobby.maxPlayers}
+            </p>
 
-          <div>
-            <label className="text-gray-300">Tipo de Atividade</label>
-            <select name="activityType" onChange={handleChange} required className="w-full bg-gray-700 text-white p-2 rounded-md">
-              <option value="">Selecione um tipo de atividade</option>
-              {activityTypes.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
+            {/* Lista de Jogadores */}
+            <div className="mt-3 space-y-2">
+              {lobby.players.map((player, index) => (
+                <div
+                  key={index}
+                  className="flex justify-between items-center bg-gray-800 p-2 rounded-md"
+                >
+                  <span className="text-white">{player.character.name}</span>
+                  <span className="text-xs text-gray-400">{player.character.vocation}</span>
+                </div>
               ))}
-            </select>
+            </div>
           </div>
-
-          <div>
-            <label className="block text-wh-300">Mínimo de Jogadores: {formData.minPlayers}</label>
-            <Slider defaultValue={[1]} max={20} step={1} 
-             onValueChange={(value) => handleSliderChange(value, "minPlayers")} />
-          </div>
-
-          <div>
-            <label className="block text-gray-300">Máximo de Jogadores: {formData.maxPlayers}</label>
-            <Slider defaultValue={[4]} max={35} step={1} onValueChange={(value) => handleSliderChange(value, "maxPlayers")} />
-          </div>
-
-          <Input type="number" name="minLevel" placeholder="Nível Mínimo (opcional)" onChange={handleChange} className="bg-gray-700 text-white" />
-          <Input type="number" name="maxLevel" placeholder="Nível Máximo (opcional)" onChange={handleChange} className="bg-gray-700 text-white" />
-
-          <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-800">
-            Criar Lobby
-          </Button>
-        </form>
-      </DialogContent>
-    </Dialog>
+        ) : (
+          <CreateLobbyButton />
+        )
+      ) : (
+        <p className="text-gray-400 text-sm text-center">
+          Você precisa estar logado para criar uma lobby.
+        </p>
+      )}
+    </div>
   );
 }

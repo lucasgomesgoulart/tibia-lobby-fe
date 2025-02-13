@@ -11,6 +11,7 @@ import cardDourado from '../../public/images/cards/mistico2.png';
 import { Button } from "./ui/button";
 import { FiArrowRight } from "react-icons/fi";
 
+
 interface Player {
   character: {
     name: string;
@@ -82,21 +83,23 @@ export default function LobbyCard({ lobby }: LobbyCardProps) {
 
         {/* 📋 Lista de Jogadores com Scroll */}
 
-        <div className="flex flex-col gap-1 mt-2 px-2 overflow-auto">
-          {lobby.players.map((player, index) => (
-            <div key={index} className="flex items-center justify-between bg-gray-800 p-1 rounded-md">
-              <div className="flex items-center gap-2">
-                <img
-                  src={getOutfitImage(player.character.vocation).src}
-                  alt={player.character.vocation}
-                  className="h-8 w-8"
-                />
-                <span className="blurred-name">******</span>
+        
+          <div className="flex flex-col gap-1 mt-2 px-2 overflow-auto">
+            {lobby.players.map((player, index) => (
+              <div key={index} className="flex items-center justify-between bg-gray-800 p-1 rounded-md">
+                <div className="flex items-center gap-2">
+                  <img
+                    src={getOutfitImage(player.character.vocation).src}
+                    alt={player.character.vocation}
+                    className="h-8 w-8"
+                  />
+                  <span className="blurred-name">******</span>
+                </div>
+                <span className="text-xs text-gray-400">{player.character.vocation}</span>
               </div>
-              <span className="text-xs text-gray-400">{player.character.vocation}</span>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        
 
         {/* 🔗 Link do Discord sempre fixo no final */}
         <div className="flex justify-center mt-auto">
