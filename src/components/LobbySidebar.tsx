@@ -23,28 +23,32 @@ export default function LobbySidebar() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [lobby, setLobby] = useState<Lobby | null>(null);
 
-  useEffect(() => {
+  const fetchLobbyData = async () => {
     const token = localStorage.getItem("token");
-    setIsLoggedIn(!!token);
 
-    const fetchLobbyData = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/lobby/my-lobby`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        const data = await response.json();
-        setLobby(data.data);
-      } catch (error) {
-        console.error("Erro ao buscar dados do lobby:", error);
-      }
-    };
-
-    if (token) {
-      fetchLobbyData();
+    if (!token) {
+      setIsLoggedIn(false);
+      return;
     }
+
+    setIsLoggedIn(true);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/lobby/my-lobby`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+      setLobby(data.data);
+    } catch (error) {
+      console.error("Erro ao buscar dados do lobby:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchLobbyData();
   }, []);
 
   return (
@@ -60,7 +64,6 @@ export default function LobbySidebar() {
               Jogadores: {lobby.players.length}/{lobby.maxPlayers}
             </p>
 
-            {/* Lista de Jogadores */}
             <div className="mt-3 space-y-2">
               {lobby.players.map((player, index) => (
                 <div
@@ -74,7 +77,7 @@ export default function LobbySidebar() {
             </div>
           </div>
         ) : (
-          <CreateLobbyButton />
+          <CreateLobbyButton onLobbyCreated={fetchLobbyData} />
         )
       ) : (
         <p className="text-gray-400 text-sm text-center">

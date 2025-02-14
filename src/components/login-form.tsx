@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input2";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
+import API_BASE_URL from "@/apiConfig";
 
 export function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
   interface FormData {
@@ -90,7 +91,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
             {error && <p className="text-red-500 text-center text-sm">{error}</p>}
             <div className="text-center text-sm text-gray-600 dark:text-gray-400">
               Não possui conta?{" "}
-              <a href="#" className="underline underline-offset-4 hover:text-primary">
+              <a href={`/register`} className="underline underline-offset-4 hover:text-primary">
                 Registre-se aqui
               </a>
             </div>

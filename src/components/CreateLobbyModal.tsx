@@ -7,7 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import API_BASE_URL from "@/apiConfig";
 
-export default function CreateLobbyModal({ onClose }: { onClose: () => void }) {
+interface CreateLobbyModalProps {
+  onClose: () => void;
+  onLobbyCreated: (lobbyTitle: string) => void; // Nova prop para atualizar a interface
+}
+
+export default function CreateLobbyModal({ onClose, onLobbyCreated }: CreateLobbyModalProps) {
   const initialFormData = {
     title: "",
     minPlayers: 2,
@@ -40,9 +45,7 @@ export default function CreateLobbyModal({ onClose }: { onClose: () => void }) {
     const fetchCharacters = async () => {
       try {
         const response = await fetch(`${API_BASE_URL}/characters`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
         const data = await response.json();
         setCharacters(data.data || []);
@@ -55,9 +58,7 @@ export default function CreateLobbyModal({ onClose }: { onClose: () => void }) {
     fetchCharacters();
   }, []);
 
-  // **🔄 Resetar o estado quando o modal for fechado**
   useEffect(() => {
-    if (!onClose) return;
     setFormData(initialFormData);
     setErrorMessage(null);
   }, [onClose]);
@@ -90,7 +91,7 @@ export default function CreateLobbyModal({ onClose }: { onClose: () => void }) {
         throw new Error(data.message || "Erro desconhecido ao criar lobby");
       }
 
-      onClose(); // Fecha o modal após sucesso
+      onLobbyCreated(formData.title); // Atualiza o botão e fecha o modal
     } catch (error: any) {
       setErrorMessage(error.message);
     }
@@ -98,9 +99,9 @@ export default function CreateLobbyModal({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="bg-white text-white p-6 rounded-md shadow-lg">
+      <DialogContent className="bg-white text-black p-6 rounded-md shadow-lg">
         <DialogHeader className="border-b border-gray-400 mb-4">
-          <DialogTitle className="text-left text-lg text-black">
+          <DialogTitle className="text-left text-lg">
             Criar Nova Lobby
           </DialogTitle>
         </DialogHeader>
@@ -113,7 +114,7 @@ export default function CreateLobbyModal({ onClose }: { onClose: () => void }) {
             onChange={handleChange}
             value={formData.title}
             required
-            className="border border-black placeholder-black text-black"
+            className="border border-black placeholder-gray-500 text-black"
             placeholder="Insira o título da lobby"
           />
 
@@ -122,7 +123,7 @@ export default function CreateLobbyModal({ onClose }: { onClose: () => void }) {
             onChange={handleChange}
             value={formData.activityType}
             required
-            className="w-full text-black p-2 rounded-md border border-black placeholder-black"
+            className="w-full text-black p-2 rounded-md border border-black placeholder-gray-500"
           >
             <option value="">Selecione um tipo de atividade</option>
             {activityTypes.map((type) => (
@@ -135,7 +136,7 @@ export default function CreateLobbyModal({ onClose }: { onClose: () => void }) {
             onChange={handleChange}
             value={formData.characterId}
             required
-            className="w-full text-black p-2 rounded-md border border-black placeholder-black"
+            className="w-full text-black p-2 rounded-md border border-black placeholder-gray-500"
           >
             <option value="">Selecione um personagem</option>
             {characters.map((char) => (
@@ -143,28 +144,11 @@ export default function CreateLobbyModal({ onClose }: { onClose: () => void }) {
             ))}
           </select>
 
-          <label className="block text-black">Mínimo de Jogadores: {formData.minPlayers}</label>
+          <label className="block">Mínimo de Jogadores: {formData.minPlayers}</label>
           <Slider defaultValue={[formData.minPlayers]} max={20} min={2} step={1} onValueChange={(value) => handleSliderChange(value, "minPlayers")} />
 
-          <label className="block text-black">Máximo de Jogadores: {formData.maxPlayers}</label>
+          <label className="block">Máximo de Jogadores: {formData.maxPlayers}</label>
           <Slider defaultValue={[formData.maxPlayers]} max={35} step={1} onValueChange={(value) => handleSliderChange(value, "maxPlayers")} />
-
-          <Input
-            type="number"
-            name="minLevel"
-            value={formData.minLevel}
-            placeholder="Nível Mínimo (opcional)"
-            onChange={handleChange}
-            className="text-black placeholder-black"
-          />
-          <Input
-            type="number"
-            name="maxLevel"
-            value={formData.maxLevel}
-            placeholder="Nível Máximo (opcional)"
-            onChange={handleChange}
-            className="text-black placeholder-black"
-          />
 
           <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-800">
             Criar Lobby

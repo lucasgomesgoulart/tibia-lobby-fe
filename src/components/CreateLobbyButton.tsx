@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { FaPlusCircle } from "react-icons/fa";
 import CreateLobbyModal from "@/components/CreateLobbyModal";
 
-export default function CreateLobbyButton() {
+export default function CreateLobbyButton({ onLobbyCreated }: { onLobbyCreated: () => void }) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -17,7 +17,8 @@ export default function CreateLobbyButton() {
         <FaPlusCircle className="h-5 w-5 transition-transform duration-300 group-hover:rotate-90" />
         <span className="flex-1 text-center">Criar Lobby</span>
       </Button>
-      {isOpen && <CreateLobbyModal onClose={() => setIsOpen(false)} />}
+
+      {isOpen && <CreateLobbyModal onClose={() => setIsOpen(false)} onLobbyCreated={onLobbyCreated} />}
     </>
   );
 }

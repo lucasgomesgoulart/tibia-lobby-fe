@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -15,15 +14,8 @@ export default function SignupForm() {
     password: "",
     full_name: "",
     phone: "",
-    country: "",
-    state: "",
-    city: "",
-    zip_code: "",
-    address: "",
-    address_2: "",
   });
 
-  const [currentTab, setCurrentTab] = useState("personal");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -34,11 +26,24 @@ export default function SignupForm() {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     setErrorMessage(null);
+    const userPayload = {
+      ...formData,
+      country: "", 
+      state: "",
+      city: "",
+      zip_code: "",
+      address: "",
+      address_2: "",
+      birth_date: null,
+      role: "user", 
+      status: "active",
+    };
+
     try {
       const response = await fetch(`${API_BASE_URL}/users`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(userPayload),
       });
 
       const data = await response.json();
@@ -46,7 +51,7 @@ export default function SignupForm() {
         throw new Error(data.message || "Erro ao cadastrar.");
       }
 
-      alert("Cadastro realizado com sucesso!");
+      alert("Cadastro realizado com sucesso! Complete seus dados nas configurações.");
     } catch (error: any) {
       setErrorMessage(error.message);
     } finally {
@@ -59,62 +64,77 @@ export default function SignupForm() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="w-full max-w-2xl p-6 rounded-xl shadow-lg"
+      className="w-full max-w-lg p-6 rounded-xl shadow-lg bg-gray-900/90 text-white border border-gray-700"
     >
-      <h2 className="text-center text-2xl font-bold mb-6">Cadastro</h2>
+      <h2 className="text-center text-3xl font-extrabold text-gray-100 mb-6">Cadastro</h2>
 
-      <Tabs defaultValue="personal" value={currentTab} onValueChange={setCurrentTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 bg-gray-700 p-1 rounded-md">
-          <TabsTrigger value="personal">Pessoal</TabsTrigger>
-          <TabsTrigger value="address">Endereço</TabsTrigger>
-          <TabsTrigger value="confirmation">Confirmação</TabsTrigger>
-        </TabsList>
+      <div className="space-y-4">
+        <div>
+          <Label className="text-gray-200">Nome de Usuário</Label>
+          <Input
+            name="username"
+            onChange={handleChange}
+            value={formData.username}
+            required
+            className="bg-gray-800 border-gray-600 text-white"
+          />
+        </div>
 
-        <TabsContent value="personal">
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
-            <div className="space-y-4">
-              <Label>Nome de Usuário</Label>
-              <Input name="username" onChange={handleChange} value={formData.username} required />
-              <Label>Email</Label>
-              <Input name="email" type="email" onChange={handleChange} value={formData.email} required />
-              <Label>Senha</Label>
-              <Input name="password" type="password" onChange={handleChange} value={formData.password} required />
-              <Button onClick={() => setCurrentTab("address")} className="w-full mt-4">Próximo</Button>
-            </div>
-          </motion.div>
-        </TabsContent>
+        <div>
+          <Label className="text-gray-200">Email</Label>
+          <Input
+            name="email"
+            type="email"
+            onChange={handleChange}
+            value={formData.email}
+            required
+            className="bg-gray-800 border-gray-600 text-white"
+          />
+        </div>
 
-        <TabsContent value="address">
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
-            <div className="space-y-4">
-              <Label>País</Label>
-              <Input name="country" onChange={handleChange} value={formData.country} />
-              <Label>Estado</Label>
-              <Input name="state" onChange={handleChange} value={formData.state} />
-              <Label>Cidade</Label>
-              <Input name="city" onChange={handleChange} value={formData.city} />
-              <Button onClick={() => setCurrentTab("confirmation")} className="w-full mt-4">Próximo</Button>
-            </div>
-          </motion.div>
-        </TabsContent>
+        <div>
+          <Label className="text-gray-200">Senha</Label>
+          <Input
+            name="password"
+            type="password"
+            onChange={handleChange}
+            value={formData.password}
+            required
+            className="bg-gray-800 border-gray-600 text-white"
+          />
+        </div>
 
-        <TabsContent value="confirmation">
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
-            <h3 className="text-lg font-semibold mb-3">Revise seus dados</h3>
-            <ul className="text-sm text-gray-300 space-y-1">
-              <li><strong>Usuário:</strong> {formData.username}</li>
-              <li><strong>Email:</strong> {formData.email}</li>
-              <li><strong>País:</strong> {formData.country || "Não informado"}</li>
-              <li><strong>Estado:</strong> {formData.state || "Não informado"}</li>
-              <li><strong>Cidade:</strong> {formData.city || "Não informado"}</li>
-            </ul>
-            {errorMessage && <p className="text-red-500 text-sm">{errorMessage}</p>}
-            <Button onClick={handleSubmit} disabled={isSubmitting} className="w-full mt-4">
-              {isSubmitting ? "Cadastrando..." : "Finalizar Cadastro"}
-            </Button>
-          </motion.div>
-        </TabsContent>
-      </Tabs>
+        <div>
+          <Label className="text-gray-200">Nome Completo</Label>
+          <Input
+            required
+            name="full_name"
+            onChange={handleChange}
+            value={formData.full_name}
+            className="bg-gray-800 border-gray-600 text-white"
+          />
+        </div>
+
+        <div>
+          <Label className="text-gray-200">Telefone (Opcional)</Label>
+          <Input
+            name="phone"
+            onChange={handleChange}
+            value={formData.phone}
+            className="bg-gray-800 border-gray-600 text-white"
+          />
+        </div>
+
+        {errorMessage && <p className="text-red-500 text-sm">{errorMessage}</p>}
+
+        <Button onClick={handleSubmit} disabled={isSubmitting} className="w-full mt-4 bg-green-600 hover:bg-green-700 transition">
+          {isSubmitting ? "Cadastrando..." : "Criar Conta"}
+        </Button>
+      </div>
+
+      <p className="text-center text-gray-400 text-sm mt-4">
+        Você poderá completar seus dados depois nas configurações.
+      </p>
     </motion.div>
   );
 }

@@ -76,7 +76,7 @@ export const mockLobbies = [
     maxLevel: 350,
     maxPlayers: 4,
     minPlayers: 2,
-    activityType: "BOSS",
+    activityType: "QUEST",
     discordChannelLink: "https://discord.gg/epicboss",
     created_at: "2025-02-09T13:00:00.000Z",
     players: [
@@ -90,7 +90,7 @@ export const mockLobbies = [
     maxLevel: 350,
     maxPlayers: 4,
     minPlayers: 2,
-    activityType: "BOSS",
+    activityType: "WAR",
     discordChannelLink: "https://discord.gg/epicboss",
     created_at: "2025-02-09T13:00:00.000Z",
     players: [
@@ -104,7 +104,7 @@ export const mockLobbies = [
     maxLevel: 350,
     maxPlayers: 4,
     minPlayers: 2,
-    activityType: "BOSS",
+    activityType: "EVENT",
     discordChannelLink: "https://discord.gg/epicboss",
     created_at: "2025-02-09T13:00:00.000Z",
     players: [

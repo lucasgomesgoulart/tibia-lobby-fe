@@ -6,7 +6,7 @@ import Header from "@/components/Header";
 export default function LayoutNoSidebar({ children }) {
   return (
     <SidebarProvider>
-      <Header /> {/* O Header fica fixo no topo da página */}
+      <Header />
       <div
         className="relative flex flex-1 pt-20 min-h-screen"
         style={{ backgroundColor: "#4a6283" }}
@@ -21,9 +21,7 @@ export default function LayoutNoSidebar({ children }) {
             minHeight: "100%",
           }}
         ></div>
-
-        {/* Área de Conteúdo Principal sem barras laterais */}
-        <div className="w-full p-4 relative z-10">
+        <div className="w-full p-4 relative z-10 flex items-center justify-center mb-20">
           {children}
         </div>
       </div>

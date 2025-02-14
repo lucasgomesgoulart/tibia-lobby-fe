@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import API_BASE_URL from "@/apiConfig.js";
 import { FaCheckCircle } from 'react-icons/fa';
 import * as Tooltip from '@radix-ui/react-tooltip';
+import axios from 'axios';
 
 interface Character {
   id: string;
@@ -30,6 +31,11 @@ export default function CharacterSidebar() {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [characters, setCharacters] = useState<Character[]>([]);
   const [userLogged, setUserLogged] = useState<boolean>(false);
+  const [isFetchingTibiaData, setIsFetchingTibiaData] = useState<boolean>(false);
+  const [tibiaCharacterData, setTibiaCharacterData] = useState<any>(null);
+  const [characterName, setCharacterName] = useState<string>('');
+  const [isGlobal, setIsGlobal] = useState<boolean>(false);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   const vocationIcons: VocationIcons = {
     KNIGHT: '/images/voc-icons/Grand_Sanguine_Blade.gif',
@@ -62,10 +68,28 @@ export default function CharacterSidebar() {
     fetchCharacters();
   }, [isModalOpen]);
 
+  const fetchTibiaCharacterData = async () => {
+    setIsFetchingTibiaData(true);
+    setApiError(null);
+    try {
+      const response = await axios.get(`https://api.tibiadata.com/v4/character/${encodeURIComponent(characterName)}`);
+      if (response.data.character) {
+        setTibiaCharacterData(response.data.character.character);
+      } else {
+        setApiError('Personagem não encontrado na API do Tibia.');
+      }
+    } catch (error) {
+      setApiError('Erro ao buscar dados do personagem.');
+    }
+    setIsFetchingTibiaData(false);
+  };
+
   return (
     <div className="flex flex-col h-full p-2 relative rounded-lg shadow-md">
       <h2 className="text-white text-xl font-bold mb-4">Personagens</h2>
-
+      {isGlobal && (
+        <p className="text-red-500 text-center text-sm mb-2">Os dados do personagem serão buscados automaticamente da API do Tibia.</p>
+      )}
       <div className="flex-1 overflow-y-auto space-y-2">
         {!userLogged ? (
           <p className="text-gray-300 text-center">Você precisa fazer o login para visualizar seus personagens.</p>
@@ -75,7 +99,7 @@ export default function CharacterSidebar() {
           characters.map((char) => (
             <div
               key={char.id}
-              className={`bg-gray-800 text-white p-3 rounded-md shadow-sm flex justify-between items-center relative ${
+              className={`mr-3 bg-gray-800 text-white p-3 rounded-md shadow-sm flex justify-between items-center relative ${
                 char.serverType === 'GLOBAL' ? 'border border-yellow-400' : ''
               }`}
             >
@@ -113,7 +137,6 @@ export default function CharacterSidebar() {
           ))
         )}
       </div>
-
       {userLogged && (
         <Button
           className="w-full bg-blue-600 text-white hover:bg-blue-700 mt-4"
@@ -122,8 +145,18 @@ export default function CharacterSidebar() {
           Cadastrar Personagem
         </Button>
       )}
-
-      <CharacterRegistrationModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <CharacterRegistrationModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        isGlobal={isGlobal}
+        setIsGlobal={setIsGlobal}
+        tibiaCharacterData={tibiaCharacterData}
+        fetchTibiaCharacterData={fetchTibiaCharacterData}
+        isFetchingTibiaData={isFetchingTibiaData}
+        characterName={characterName}
+        setCharacterName={setCharacterName}
+        apiError={apiError}
+      />
     </div>
   );
 }
