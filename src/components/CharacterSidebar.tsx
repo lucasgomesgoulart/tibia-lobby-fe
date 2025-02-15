@@ -1,19 +1,18 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import CharacterRegistrationModal from "@/components/CharacterRegistrationModal";
 import { Button } from "@/components/ui/button";
 import API_BASE_URL from "@/apiConfig.js";
-import { FaCheckCircle } from 'react-icons/fa';
-import * as Tooltip from '@radix-ui/react-tooltip';
-import axios from 'axios';
+import { FaCheckCircle } from "react-icons/fa";
+import * as Tooltip from "@radix-ui/react-tooltip";
 
 interface Character {
   id: string;
   name: string;
-  vocation: 'KNIGHT' | 'PALADIN' | 'DRUID' | 'SORCERER';
+  vocation: "KNIGHT" | "PALADIN" | "DRUID" | "SORCERER";
   level: number;
-  serverType: 'GLOBAL' | 'OTSERVER';
+  serverType: "GLOBAL" | "OTSERVER";
   world?: {
     name: string;
     isGlobal: boolean;
@@ -33,15 +32,15 @@ export default function CharacterSidebar() {
   const [userLogged, setUserLogged] = useState<boolean>(false);
   const [isFetchingTibiaData, setIsFetchingTibiaData] = useState<boolean>(false);
   const [tibiaCharacterData, setTibiaCharacterData] = useState<any>(null);
-  const [characterName, setCharacterName] = useState<string>('');
+  const [characterName, setCharacterName] = useState<string>("");
   const [isGlobal, setIsGlobal] = useState<boolean>(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
   const vocationIcons: VocationIcons = {
-    KNIGHT: '/images/voc-icons/Grand_Sanguine_Blade.gif',
-    PALADIN: '/images/voc-icons/Grand_Sanguine_Crossbow.gif',
-    DRUID: '/images/voc-icons/Hailstorm_Rod.gif',
-    SORCERER: '/images/voc-icons/Wand_of_Inferno.gif',
+    KNIGHT: "/images/voc-icons/Grand_Sanguine_Blade.gif",
+    PALADIN: "/images/voc-icons/Grand_Sanguine_Crossbow.gif",
+    DRUID: "/images/voc-icons/Hailstorm_Rod.gif",
+    SORCERER: "/images/voc-icons/Wand_of_Inferno.gif",
   };
 
   useEffect(() => {
@@ -49,7 +48,7 @@ export default function CharacterSidebar() {
       try {
         const response = await fetch(`${API_BASE_URL}/characters`, {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         });
         const data = await response.json();
@@ -60,7 +59,7 @@ export default function CharacterSidebar() {
           setUserLogged(false);
         }
       } catch (error) {
-        console.error('Erro ao buscar personagens:', error);
+        console.error("Erro ao buscar personagens:", error);
         setUserLogged(false);
       }
     };
@@ -69,30 +68,40 @@ export default function CharacterSidebar() {
   }, [isModalOpen]);
 
   const fetchTibiaCharacterData = async () => {
+    if (!characterName.trim()) return;
+
     setIsFetchingTibiaData(true);
     setApiError(null);
+
     try {
-      const response = await axios.get(`https://api.tibiadata.com/v4/character/${encodeURIComponent(characterName)}`);
-      if (response.data.character) {
-        setTibiaCharacterData(response.data.character.character);
+      const response = await fetch(`https://api.tibiadata.com/v4/character/${encodeURIComponent(characterName)}`);
+      const data = await response.json();
+
+      if (response.ok && data.character) {
+        setTibiaCharacterData(data.character.character);
       } else {
-        setApiError('Personagem não encontrado na API do Tibia.');
+        throw new Error("Personagem não encontrado na API do Tibia.");
       }
-    } catch (error) {
-      setApiError('Erro ao buscar dados do personagem.');
+    } catch (error: any) {
+      setApiError(error.message || "Erro ao buscar dados do personagem.");
+    } finally {
+      setIsFetchingTibiaData(false);
     }
-    setIsFetchingTibiaData(false);
   };
 
   return (
     <div className="flex flex-col h-full p-2 relative rounded-lg shadow-md">
       <h2 className="text-white text-xl font-bold mb-4">Personagens</h2>
+
       {isGlobal && (
-        <p className="text-red-500 text-center text-sm mb-2">Os dados do personagem serão buscados automaticamente da API do Tibia.</p>
+        <p className="text-red-500 text-center text-sm mb-2">
+          Os dados do personagem serão buscados automaticamente da API do Tibia.
+        </p>
       )}
+
       <div className="flex-1 overflow-y-auto space-y-2">
         {!userLogged ? (
-          <p className="text-gray-300 text-center">Você precisa fazer o login para visualizar seus personagens.</p>
+          <p className="text-gray-300 text-center">Você precisa fazer login para visualizar seus personagens.</p>
         ) : characters.length === 0 ? (
           <p className="text-gray-300 text-center">Nenhum personagem cadastrado.</p>
         ) : (
@@ -100,7 +109,7 @@ export default function CharacterSidebar() {
             <div
               key={char.id}
               className={`mr-3 bg-gray-800 text-white p-3 rounded-md shadow-sm flex justify-between items-center relative ${
-                char.serverType === 'GLOBAL' ? 'border border-yellow-400' : ''
+                char.serverType === "GLOBAL" ? "border border-yellow-400" : ""
               }`}
             >
               <div className="flex items-center space-x-2">
@@ -114,10 +123,8 @@ export default function CharacterSidebar() {
                 </div>
               </div>
               <div className="flex items-center space-x-1">
-                {char.level > 0 && (
-                  <span className="text-blue-400 font-medium text-sm">Level: {char.level}</span>
-                )}
-                {char.serverType === 'GLOBAL' && (
+                {char.level > 0 && <span className="text-blue-400 font-medium text-sm">Level: {char.level}</span>}
+                {char.serverType === "GLOBAL" && (
                   <Tooltip.Root>
                     <Tooltip.Trigger asChild>
                       <FaCheckCircle className="text-green-400 cursor-pointer ml-1 hover:scale-110 transition-transform duration-200" />
@@ -137,14 +144,13 @@ export default function CharacterSidebar() {
           ))
         )}
       </div>
+
       {userLogged && (
-        <Button
-          className="w-full bg-blue-600 text-white hover:bg-blue-700 mt-4"
-          onClick={() => setIsModalOpen(true)}
-        >
+        <Button className="w-full bg-blue-600 text-white hover:bg-blue-700 mt-4" onClick={() => setIsModalOpen(true)}>
           Cadastrar Personagem
         </Button>
       )}
+
       <CharacterRegistrationModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
