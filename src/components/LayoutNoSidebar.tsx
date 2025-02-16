@@ -3,7 +3,7 @@
 import { SidebarProvider } from "@/components/ui/sidebar";
 import Header from "@/components/Header";
 
-export default function LayoutNoSidebar({ children }) {
+export default function LayoutNoSidebar({ children }: any): any {
   return (
     <SidebarProvider>
       <Header />

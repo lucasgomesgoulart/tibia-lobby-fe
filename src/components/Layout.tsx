@@ -31,7 +31,7 @@ export default function Layout({ children }: LayoutProps) {
 
         {/* Barra Lateral */}
         <div className="w-1/4 bg-opacity-50 backdrop-blur-md border-r border-gray-700 p-4 relative z-10 flex flex-col h-full">
-          <div className="h-1/3 mt-2 border-b-2 border-t-2 border-gray-900">
+          <div className="h-2/5 mt-2 border-b-2 border-t-2 border-gray-900">
             <LobbySidebar />
           </div>
           <div className="flex-1 flex flex-col overflow-y-auto">

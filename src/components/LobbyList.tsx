@@ -7,66 +7,36 @@ import API_BASE_URL from "@/apiConfig";
 
 export default function LobbyList() {
   const [lobbies, setLobbies] = useState<any[]>([]);
-  const [userLobby, setUserLobby] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
-  useEffect(() => {
+  const fetchLobbies = async () => {
     if (!token) {
       setError("Você precisa estar logado para ver os lobbies.");
       setLoading(false);
       return;
     }
 
-    const fetchLobbies = async () => {
-      try {
-        const [myLobbyRes, allLobbiesRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/lobby/my-lobby`, {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          }),
-          fetch(`${API_BASE_URL}/lobby`, {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          }),
-        ]);
+    try {
+      const response = await fetch(`${API_BASE_URL}/lobby`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Erro ao buscar lobbies.");
+      setLobbies(data.data || []);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        const myLobbyData = await myLobbyRes.json();
-        const allLobbiesData = await allLobbiesRes.json();
-
-        if (!myLobbyRes.ok) {
-          throw new Error(myLobbyData.message || "Erro ao buscar lobby do usuário.");
-        }
-
-        if (!allLobbiesRes.ok) {
-          throw new Error(allLobbiesData.message || "Erro ao buscar lobbies.");
-        }
-
-        const allLobbies = allLobbiesData.data || [];
-        const userLobbyData = myLobbyData.data || null;
-
-        // Se o usuário tem uma lobby, coloca ela no topo
-        if (userLobbyData) {
-          setUserLobby(userLobbyData);
-          setLobbies([userLobbyData, ...allLobbies.filter((lobby: any) => lobby.id !== userLobbyData.id)]);
-        } else {
-          setLobbies(allLobbies);
-        }
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
+  useEffect(() => {
     fetchLobbies();
+    const interval = setInterval(fetchLobbies, 5000);
+    return () => clearInterval(interval);
   }, [token]);
 
   const handleFilterResults = (filteredLobbies: any[]) => {
@@ -76,7 +46,6 @@ export default function LobbyList() {
   return (
     <div className="space-y-4">
       <LobbyFilter onFilter={handleFilterResults} />
-
       {loading ? (
         <p className="text-white text-center">Carregando lobbies...</p>
       ) : error ? (
@@ -85,12 +54,11 @@ export default function LobbyList() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 w-full max-w-[1440px] mx-auto">
           {lobbies.length > 0 ? (
             lobbies.map((lobby) => (
+              // Passa ownerId extraído do objeto owner e o callback onLobbyJoined
               <LobbyCard
                 key={lobby.id}
-                lobby={{
-                  ...lobby,
-                  activePlayersCount: lobby.players.length,
-                }}
+                lobby={{ ...lobby, ownerId: lobby.owner?.id }}
+                onLobbyJoined={fetchLobbies}
               />
             ))
           ) : (

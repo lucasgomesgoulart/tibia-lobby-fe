@@ -1,11 +1,11 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { Button } from "@/components/ui/button";
 import CharacterForm from './CharacterForm';
 
 interface CharacterRegistrationModalProps {
   isOpen: boolean;
+
   onClose: () => void;
 }
 

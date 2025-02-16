@@ -1,40 +1,13 @@
-"use client";
-
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Users, Activity } from "lucide-react";
-import OutfitDruid from "../../public/images/outfits/Druid_Male.gif";
-import OutfitHunter from "../../public/images/outfits/Hunter_Male.gif";
-import OutfitKnight from "../../public/images/outfits/Knight_Male.gif";
-import OutfitMage from "../../public/images/outfits/Mage_Male.gif";
 import { Button } from "./ui/button";
 import { FiArrowRight } from "react-icons/fi";
+import API_BASE_URL from "@/apiConfig";
+import { CharacterSelectionModal } from "./CharacterSelectionModal";
+import { PlayerList } from "./PlayerList";
+import { LevelSection } from "./LevelSection";
 
-interface Player {
-  character: {
-    name: string;
-    vocation: string;
-  };
-}
-
-interface Lobby {
-  id: string;
-  title: string;
-  minLevel: number;
-  maxLevel: number;
-  maxPlayers: number;
-  minPlayers: number;
-  activityType: string;
-  discordChannelLink: string;
-  created_at: string;
-  players: Player[];
-}
-
-interface LobbyCardProps {
-  lobby: Lobby;
-}
-
-// Cores para cada atividade
 const activityStyles: Record<string, { border: string; bg: string; tag: string }> = {
   PVP: { border: "border-red-600", bg: "bg-red-900/50", tag: "bg-red-600 text-white" },
   HUNT: { border: "border-green-600", bg: "bg-green-900/50", tag: "bg-green-600 text-white" },
@@ -44,94 +17,124 @@ const activityStyles: Record<string, { border: string; bg: string; tag: string }
   EVENT: { border: "border-orange-600", bg: "bg-orange-900/50", tag: "bg-orange-600 text-white" },
 };
 
-const getOutfitImage = (vocation: string) => {
-  switch (vocation.toLowerCase()) {
-    case "druid":
-      return OutfitDruid;
-    case "paladin":
-      return OutfitHunter;
-    case "knight":
-      return OutfitKnight;
-    case "sorcerer":
-      return OutfitMage;
-    default:
-      return OutfitMage;
-  }
-};
+export interface Character {
+  id: string;
+  name: string;
+  serverType: "GLOBAL" | "OTSERVER";
+  vocation: "DRUID" | "SORCERER" | "KNIGHT" | "PALADIN";
+  level?: number;
+  world?: { id: string; name: string; isGlobal: boolean };
+  otServer?: { id: string; name: string };
+}
 
-export default function LobbyCard({ lobby }: LobbyCardProps) {
-  const activePlayersCount = lobby.players.length;
+export interface Player {
+  character: Character;
+  left_at: number | null;
+}
+
+export interface Lobby {
+  id: string;
+  title: string;
+  minLevel: number;
+  maxLevel: number;
+  maxPlayers: number;
+  minPlayers: number;
+  activityType: "PVP" | "HUNT" | "QUEST" | "BOSS" | "WAR" | "EVENT";
+  discordChannelLink: string;
+  isDeleted?: boolean;
+  created_at?: Date;
+  updated_at?: Date;
+  ownerId: string;
+  players: Player[];
+}
+
+// Adicionamos a prop onLobbyJoined para notificar o pai que houve um join
+export default function LobbyCard({ lobby, onLobbyJoined }: { lobby: Lobby; onLobbyJoined: () => void }) {
+  // Se a lobby não tiver dono, não renderiza nada.
+  if (!lobby.ownerId) {
+    return null;
+  }
+
+  const [characters, setCharacters] = useState<Character[]>([]);
+  const [showModal, setShowModal] = useState(false);
   const { border, bg, tag } = activityStyles[lobby.activityType] || activityStyles.EVENT;
 
+  // Filtra apenas os jogadores ativos (left_at === null)
+  const playersInLobby = lobby.players.filter((player) => player.left_at === null);
+
+  useEffect(() => {
+    fetchCharacters();
+  }, []);
+
+  const fetchCharacters = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/characters`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      const data = await response.json();
+      setCharacters(data.data);
+    } catch (error) {
+      console.error("Erro ao buscar personagens:", error);
+    }
+  };
+
+  const handleCharacterSelect = async (characterId: string) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/lobby-players/join/${lobby.id}/${characterId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Erro ao entrar na lobby");
+      alert(data.message);
+      setShowModal(false);
+      // Chama o callback para atualizar a lobby após o join
+      onLobbyJoined();
+    } catch (error: any) {
+      console.error("Erro ao entrar na lobby:", error);
+      alert(error.message || "Erro desconhecido ao entrar na lobby.");
+    }
+    // Opcional: atualizar a lista de personagens, se necessário
+    fetchCharacters();
+  };
+
   return (
-    <Card className={`relative p-4 shadow-xl rounded-xl ${bg} ${border} border-2 overflow-hidden h-[370px] flex flex-col justify-between`}>
-      
-      {/* TAG do tipo de atividade */}
-      <div className={`absolute top-0 right-0 px-3 py-1 text-xs font-bold uppercase rounded-bl-lg ${tag}`}>
-        {lobby.activityType}
-      </div>
-
-      <div className="relative z-10 flex flex-col justify-start h-full text-white">
-        <h2 className="font-bold mt-2 mb-2 text-center uppercase text-sm">{lobby.title}</h2>
-
-        <div className="flex justify-between text-xs mb-2 px-2">
-          <div className="flex items-center gap-1">
-            <Users className="h-4 w-4" />
-            {activePlayersCount}/{lobby.maxPlayers} Jogadores
-          </div>
-          <div className="flex items-center gap-1">
-            <Activity className="h-4 w-4" /> {lobby.activityType}
-          </div>
+    <>
+      <Card className={`relative p-4 shadow-xl rounded-xl ${bg} ${border} border-2 overflow-hidden h-[370px] flex flex-col justify-between`}>
+        <div className={`absolute top-0 right-0 px-3 py-1 text-xs font-bold uppercase rounded-bl-lg ${tag}`}>
+          {lobby.activityType}
         </div>
-
-        {/* Seção de níveis com contraste melhorado */}
-        <div className="flex justify-around items-center bg-white/20 dark:bg-black/40 p-2 rounded-md mx-2">
-          <div className="text-center">
-            <p className="text-xs text-white/80">Nível Mínimo</p>
-            <p className="font-bold text-sm">{lobby.minLevel}</p>
-          </div>
-          <div className="text-center">
-            <p className="text-xs text-white/80">Nível Máximo</p>
-            <p className="font-bold text-sm">{lobby.maxLevel}</p>
-          </div>
-        </div>
-
-        {/* Lista de jogadores com melhor contraste e espaçamento */}
-        <div className="flex flex-col gap-2 mt-3 px-2 overflow-auto">
-          {lobby.players.map((player, index) => (
-            <div
-              key={index}
-              className={`flex items-center justify-between p-2 rounded-md border border-gray-700/50 ${bg} backdrop-blur-md shadow-md`}
-            >
-              <div className="flex items-center gap-3">
-                <img
-                  src={getOutfitImage(player.character.vocation).src}
-                  alt={player.character.vocation}
-                  className="h-12 w-12 object-contain shadow-lg"
-                />
-                <span className="blurred-name text-white/90 font-semibold">{player.character.name}</span>
-              </div>
-              <span className="text-xs font-medium text-white/80">{player.character.vocation}</span>
+        <div className="relative z-10 flex flex-col justify-start h-full text-white">
+          <h2 className="font-bold mt-2 mb-2 text-center uppercase text-sm">{lobby.title}</h2>
+          <div className="flex justify-between text-xs mb-2 px-2">
+            <div className="flex items-center gap-1">
+              <Users className="h-4 w-4" />
+              {lobby.players.length}/{lobby.maxPlayers} Jogadores
             </div>
-          ))}
+            <div className="flex items-center gap-1">
+              <Activity className="h-4 w-4" /> {lobby.activityType}
+            </div>
+          </div>
+          <LevelSection minLevel={lobby.minLevel} maxLevel={lobby.maxLevel} />
+          <PlayerList players={playersInLobby} bg={bg} />
+          <div className="flex justify-center mt-auto">
+            <Button onClick={() => setShowModal(true)} className="text-blue-400 hover:text-white transition-colors mt-2 text-lg">
+              <FiArrowRight />
+              Entrar
+            </Button>
+          </div>
         </div>
-
-        {/* 🔗 Botão de entrada */}
-        <div className="flex justify-center mt-auto">
-          <Button className="text-blue-400 hover:text-white transition-colors mt-2 text-lg">
-            <FiArrowRight />
-            Entrar
-          </Button>
-        </div>
-      </div>
-
-      <style jsx>{`
-        .blurred-name {
-          filter: blur(5px);
-          user-select: none;
-          pointer-events: none;
-        }
-      `}</style>
-    </Card>
+      </Card>
+      {showModal && (
+        <CharacterSelectionModal
+          characters={characters}
+          onSelect={handleCharacterSelect}
+          onClose={() => setShowModal(false)}
+        />
+      )}
+    </>
   );
 }
