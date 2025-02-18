@@ -23,7 +23,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
     setLoading(true);
     setError("");
 
-    console.log("Dados enviados:", formData);
+    
 
     try {
       const response = await fetch("http://localhost:3000/auth/login", {
@@ -37,8 +37,10 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
       }
 
       const data = await response.json();
-      console.log("Logged in successfully", data);
+      
       localStorage.setItem("token", data.token);
+      localStorage.setItem("user", data.userId);
+      
       window.location.href = "/";
     } catch (error) {
       setError("Usuário ou senha incorretos.");

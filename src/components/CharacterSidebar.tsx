@@ -55,6 +55,7 @@ export default function CharacterSidebar() {
         if (response.ok) {
           setCharacters(data.data || []);
           setUserLogged(true);
+          localStorage.setItem('characters', JSON.stringify(data));
         } else {
           setUserLogged(false);
         }
@@ -162,6 +163,7 @@ export default function CharacterSidebar() {
         characterName={characterName}
         setCharacterName={setCharacterName}
         apiError={apiError}
+        hideManualInputs={isGlobal}
       />
     </div>
   );

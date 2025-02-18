@@ -89,6 +89,7 @@ export default function CharacterForm({ onClose }: CharacterFormProps) {
       console.error('Erro na requisição:', error);
       alert('Erro ao cadastrar o personagem.');
     } finally {
+      localStorage.setItem('characters', JSON.stringify(payload));
       setIsLoading(false);
     }
   };

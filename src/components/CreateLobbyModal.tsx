@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import API_BASE_URL from "@/apiConfig";
+import { useCharacters } from "@/hooks/useCharacters";
 
 interface CreateLobbyModalProps {
   onClose: () => void;
@@ -26,12 +27,13 @@ export default function CreateLobbyModal({ onClose, onLobbyCreated }: CreateLobb
 
   const [formData, setFormData] = useState(initialFormData);
   const [activityTypes, setActivityTypes] = useState<string[]>([]);
-  const [characters, setCharacters] = useState<{ id: string; name: string }[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
+  // Utiliza o hook para buscar os personagens
+  const { characters, loading: charactersLoading, error: charactersError, fetchCharacters } = useCharacters();
 
+  // Busca os tipos de atividade
+  useEffect(() => {
     const fetchActivityTypes = async () => {
       try {
         const response = await fetch(`${API_BASE_URL}/activeType`);
@@ -42,22 +44,10 @@ export default function CreateLobbyModal({ onClose, onLobbyCreated }: CreateLobb
       }
     };
 
-    const fetchCharacters = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/characters`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await response.json();
-        setCharacters(data.data || []);
-      } catch (error) {
-        console.error("Erro ao buscar personagens:", error);
-      }
-    };
-
     fetchActivityTypes();
-    fetchCharacters();
   }, []);
 
+  // Reseta o formulário ao fechar o modal
   useEffect(() => {
     setFormData(initialFormData);
     setErrorMessage(null);
@@ -91,7 +81,7 @@ export default function CreateLobbyModal({ onClose, onLobbyCreated }: CreateLobb
         throw new Error(data.message || "Erro desconhecido ao criar lobby");
       }
 
-      onLobbyCreated(formData.title); // Atualiza o botão e fecha o modal
+      onLobbyCreated(formData.title); // Atualiza a interface e fecha o modal
     } catch (error: any) {
       setErrorMessage(error.message);
     }
@@ -101,9 +91,7 @@ export default function CreateLobbyModal({ onClose, onLobbyCreated }: CreateLobb
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="bg-white text-black p-6 rounded-md shadow-lg">
         <DialogHeader className="border-b border-gray-400 mb-4">
-          <DialogTitle className="text-left text-lg">
-            Criar Nova Lobby
-          </DialogTitle>
+          <DialogTitle className="text-left text-lg">Criar Nova Lobby</DialogTitle>
         </DialogHeader>
 
         {errorMessage && <p className="text-red-500 text-lg text-center">{errorMessage}</p>}
@@ -127,7 +115,9 @@ export default function CreateLobbyModal({ onClose, onLobbyCreated }: CreateLobb
           >
             <option value="">Selecione um tipo de atividade</option>
             {activityTypes.map((type) => (
-              <option key={type} value={type}>{type}</option>
+              <option key={type} value={type}>
+                {type}
+              </option>
             ))}
           </select>
 
@@ -139,16 +129,35 @@ export default function CreateLobbyModal({ onClose, onLobbyCreated }: CreateLobb
             className="w-full text-black p-2 rounded-md border border-black placeholder-gray-500"
           >
             <option value="">Selecione um personagem</option>
-            {characters.map((char) => (
-              <option key={char.id} value={char.id}>{char.name}</option>
-            ))}
+            {charactersLoading ? (
+              <option>Carregando...</option>
+            ) : charactersError ? (
+              <option>Erro ao carregar personagens</option>
+            ) : (
+              characters.map((char: any) => (
+                <option key={char.id} value={char.id}>
+                  {char.name}
+                </option>
+              ))
+            )}
           </select>
 
           <label className="block">Mínimo de Jogadores: {formData.minPlayers}</label>
-          <Slider defaultValue={[formData.minPlayers]} max={20} min={2} step={1} onValueChange={(value) => handleSliderChange(value, "minPlayers")} />
+          <Slider
+            defaultValue={[formData.minPlayers]}
+            max={20}
+            min={2}
+            step={1}
+            onValueChange={(value) => handleSliderChange(value, "minPlayers")}
+          />
 
           <label className="block">Máximo de Jogadores: {formData.maxPlayers}</label>
-          <Slider defaultValue={[formData.maxPlayers]} max={35} step={1} onValueChange={(value) => handleSliderChange(value, "maxPlayers")} />
+          <Slider
+            defaultValue={[formData.maxPlayers]}
+            max={35}
+            step={1}
+            onValueChange={(value) => handleSliderChange(value, "maxPlayers")}
+          />
 
           <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-800">
             Criar Lobby

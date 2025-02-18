@@ -1,122 +1,38 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Trash2, LogOut, Users, Sword, Shield, Skull, Gamepad } from "lucide-react";
+import { Trash2, LogOut, Users, Sword, Shield, Skull, Gamepad, Crown } from "lucide-react";
 import API_BASE_URL from "@/apiConfig";
 import CreateLobbyModal from "./CreateLobbyModal";
-
-interface Player {
-  character: {
-    id?: string;
-    name: string;
-    vocation: string;
-    user?: { id: string }; // incluímos a propriedade user para identificar o dono do character
-  };
-  left_at: number | null;
-}
-
-interface Lobby {
-  id: string;
-  title: string;
-  activityType: string;
-  maxPlayers: number;
-  players: Player[];
-  ownerId: string;
-}
+import { useLobby } from "@/hooks/useLobby";
+import Image from 'next/image';
 
 export default function LobbyDisplay() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [lobby, setLobby] = useState<Lobby | null>(null);
-  const [userId, setUserId] = useState("");
-  const [characterId, setCharacterId] = useState("");
+  const {
+    lobby,
+    isLoggedIn,
+    userId,
+    loading,
+    error,
+    refresh
+  } = useLobby();
+
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  const fetchLobbyData = async () => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      setIsLoggedIn(false);
-      return;
-    }
-    setIsLoggedIn(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/lobby-players/check`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!response.ok) throw new Error("Usuário não está em nenhuma lobby.");
-      const data = await response.json();
-  
-      if (!data.data) {
-        setLobby(null);
-        return;
-      }
-  
-      const fetchedLobby: Lobby = data.data;
-      setUserId(data.userId);
-  
-      const activePlayers = fetchedLobby.players.filter(
-        (player) => player.left_at === null
-      );
-  
-      const isOwner = fetchedLobby.ownerId === data.userId;
-  
-      if (!isOwner && activePlayers.length === 0) {
-        setLobby(null);
-      } else {
-        setLobby(fetchedLobby);
-      }
-  
-      // Tenta identificar o registro do usuário logado
-      let userPlayer = fetchedLobby.players.find(
-        (player) =>
-          player.left_at === null &&
-          player.character &&
-          player.character.id &&
-          player.character.user &&
-          player.character.user.id === data.userId
-      );
-  
-      // Fallback: se não encontrou e houver apenas um player ativo, usamos ele
-      if (!userPlayer && activePlayers.length === 1) {
-        userPlayer = activePlayers[0];
-      }
-  
-      if (userPlayer && userPlayer.character.id) {
-        setCharacterId(userPlayer.character.id);
-      } else {
-        console.warn("Não foi possível identificar o characterId do usuário logado.");
-        setCharacterId("");
-      }
-    } catch (error) {
-      console.error("Erro ao buscar dados do lobby:", error);
-      setLobby(null);
-    }
-  };
-  
-  useEffect(() => {
-    fetchLobbyData();
-  }, []);
-
-  const handleLobbyCreated = () => {
-    setShowCreateModal(false);
-    fetchLobbyData();
-  };
-
-  const handleDeleteLobby = async (lobbyId: string) => {
+  // Função para sair ou excluir a lobby (endpoint unificado do backend)
+  const handleLeaveOrDeleteLobby = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(
-        `${API_BASE_URL}/lobby-players/left-lobby/${lobbyId}/${characterId}`,
-        {
-          method: "PUT",
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const response = await fetch(`${API_BASE_URL}/lobby/my-lobby`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Erro ao excluir a lobby");
+      if (!response.ok) throw new Error(data.message || "Erro ao atualizar a lobby");
       alert(data.message);
-      setLobby(null);
-    } catch (error: any) {
-      console.error("Erro ao excluir a lobby:", error);
-      alert(error.message || "Erro desconhecido ao excluir a lobby");
+      refresh();
+    } catch (err: any) {
+      console.error("Erro ao atualizar a lobby:", err);
+      alert(err.message || "Erro desconhecido ao atualizar a lobby");
     }
   };
 
@@ -128,7 +44,14 @@ export default function LobbyDisplay() {
     );
   }
 
-  // Se não houver lobby ativa, exibe a mensagem e o botão para criar uma nova lobby
+  if (loading) {
+    return <p className="text-gray-400 text-sm text-center">Carregando lobby...</p>;
+  }
+
+  if (error) {
+    return <p className="text-red-500 text-sm text-center">{error}</p>;
+  }
+
   if (!lobby) {
     return (
       <>
@@ -139,20 +62,26 @@ export default function LobbyDisplay() {
         {showCreateModal && (
           <CreateLobbyModal
             onClose={() => setShowCreateModal(false)}
-            onLobbyCreated={handleLobbyCreated}
+            onLobbyCreated={() => {
+              setShowCreateModal(false);
+              refresh();
+            }}
           />
         )}
       </>
     );
   }
 
-  // Filtra os players ativos para exibir na contagem e na lista
+  // Considerando que os jogadores retornados já são ativos (left_at === null)
   const activePlayers = lobby.players.filter((player) => player.left_at === null);
+  // Assume que o líder é o primeiro da lista
+  const leaderIndex = 0;
 
   return (
     <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-6 rounded-2xl shadow-2xl border border-gray-700 text-white space-y-4">
+      {/* Cabeçalho */}
       <div className="flex items-center justify-between">
-        <h3 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600">
+        <h3 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-600">
           {lobby.title}
         </h3>
         <div className="flex items-center space-x-2">
@@ -161,6 +90,7 @@ export default function LobbyDisplay() {
         </div>
       </div>
 
+      {/* Contagem de Jogadores */}
       <div className="flex items-center space-x-4">
         <Users className="w-6 h-6 text-blue-400" />
         <p className="text-sm text-gray-300">
@@ -168,33 +98,47 @@ export default function LobbyDisplay() {
         </p>
       </div>
 
+      {/* Lista de Jogadores */}
       <div className="space-y-3">
-        {activePlayers.map((player, idx) => (
-          <div
-            key={idx}
-            className="flex justify-between items-center bg-gray-700 p-3 rounded-lg hover:bg-gray-600 transition-all duration-200"
-          >
-            <div className="flex items-center space-x-3">
-              {player.character.vocation === "Guerreiro" ? (
-                <Sword className="w-5 h-5 text-yellow-400" />
-              ) : player.character.vocation === "Mago" ? (
-                <Shield className="w-5 h-5 text-blue-400" />
-              ) : (
-                <Skull className="w-5 h-5 text-red-400" />
-              )}
-              <span className="font-medium">{player.character.name}</span>
+        {activePlayers.map((player, idx) => {
+          const isLeader = idx === leaderIndex;
+          return (
+            <div
+              key={idx}
+              className={`flex justify-between items-center p-3 rounded-lg transition-all duration-200 ${isLeader ? "bg-gray-700 border border-yellow-400" : "bg-gray-700 hover:bg-gray-600"
+                }`}
+            >
+              <div className="flex items-center space-x-3">
+                {isLeader ? (
+                  <Image
+                    src="/images/geral-icons/Shared_Lider_Icon.gif"
+                    alt="Líder da Party"
+                    width={15}
+                    height={15}
+                  />
+                ) : (
+                  <Image
+                    src="/images/geral-icons/Shared_Member_Icon.gif"
+                    alt="Membro da Party"
+                    width={15}
+                    height={15}
+                  />
+                )}
+                <span className="font-medium">{player.character.name}</span>
+              </div>
+              <span className="text-sm text-gray-300">{player.character.vocation}</span>
             </div>
-            <span className="text-sm text-gray-300">{player.character.vocation}</span>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
+      {/* Botões de Ação */}
       <div className="flex justify-end space-x-3">
-        {lobby.ownerId === userId ? (
+        {lobby.owner.id === userId ? (
           <Button
             variant="destructive"
             className="bg-gradient-to-r from-red-500 to-pink-600"
-            onClick={() => handleDeleteLobby(lobby.id)}
+            onClick={handleLeaveOrDeleteLobby}
           >
             <Trash2 className="w-5 h-5 mr-2" /> Excluir Lobby
           </Button>
@@ -202,7 +146,7 @@ export default function LobbyDisplay() {
           <Button
             variant="destructive"
             className="bg-gradient-to-r from-purple-500 to-blue-600"
-            onClick={() => handleDeleteLobby(lobby.id)}
+            onClick={handleLeaveOrDeleteLobby}
           >
             <LogOut className="w-5 h-5 mr-2" /> Sair da Lobby
           </Button>

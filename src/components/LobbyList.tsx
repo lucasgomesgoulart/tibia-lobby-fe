@@ -6,25 +6,33 @@ import LobbyCard from "./lobbyCard";
 import API_BASE_URL from "@/apiConfig";
 
 export default function LobbyList() {
+  const [mounted, setMounted] = useState(false);
   const [lobbies, setLobbies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  // Inicializamos com undefined para indicar "não lido ainda"
+  const [token, setToken] = useState<string | null | undefined>(undefined);
+
+  // Aguarda a montagem para acessar o localStorage
+  useEffect(() => {
+    setMounted(true);
+    const tokenLocal = localStorage.getItem("token");
+    setToken(tokenLocal); // Pode ser uma string ou null
+  }, []);
 
   const fetchLobbies = async () => {
-    if (!token) {
-      setError("Você precisa estar logado para ver os lobbies.");
-      setLoading(false);
-      return;
-    }
-
     try {
       const response = await fetch(`${API_BASE_URL}/lobby`, {
         method: "GET",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { 
+          "Content-Type": "application/json", 
+          Authorization: `Bearer ${token}` 
+        },
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Erro ao buscar lobbies.");
+      if (!response.ok) {
+        throw new Error(data.message || "Erro ao buscar lobbies.");
+      }
       setLobbies(data.data || []);
     } catch (err: any) {
       setError(err.message);
@@ -34,6 +42,17 @@ export default function LobbyList() {
   };
 
   useEffect(() => {
+    // Aguarda até que o token seja definido (diferente de undefined)
+    if (token === undefined) return;
+
+    if (!token) {
+      setError("Você precisa estar logado para ver os lobbies.");
+      setLoading(false);
+      return;
+    }
+
+    // Se o token existe, limpa qualquer erro anterior e busca os lobbies
+    setError(null);
     fetchLobbies();
     const interval = setInterval(fetchLobbies, 5000);
     return () => clearInterval(interval);
@@ -42,6 +61,8 @@ export default function LobbyList() {
   const handleFilterResults = (filteredLobbies: any[]) => {
     setLobbies(filteredLobbies);
   };
+
+  if (!mounted) return null;
 
   return (
     <div className="space-y-4">
