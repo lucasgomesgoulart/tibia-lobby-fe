@@ -12,6 +12,7 @@ import { FiArrowRight } from "react-icons/fi";
 import { CharacterSelectionModal } from "./CharacterSelectionModal";
 import API_BASE_URL from "@/apiConfig";
 import { useCharacters } from "@/hooks/useCharacters";
+import { useSocket } from '@/hooks/useSocket';
 
 interface Player {
   id: string; // ID do jogador (precisa estar presente)
@@ -69,6 +70,8 @@ const getOutfitImage = (vocation: string) => {
 };
 
 export default function LobbyCard({ lobby, onLobbyJoined }: LobbyCardProps) {
+
+  const socket = useSocket();
   const activePlayersCount = lobby.players.length;
   const { border, bg, tag } = activityStyles[lobby.activityType] || activityStyles.EVENT;
 
@@ -103,6 +106,10 @@ export default function LobbyCard({ lobby, onLobbyJoined }: LobbyCardProps) {
       if (!response.ok) {
         throw new Error(data.message || "Erro ao entrar na lobby");
       }
+
+      if (socket) {
+        socket.emit("joinLobbyRoom", lobby.id);
+      }
   
       setIsModalOpen(false);
       if (onLobbyJoined) {
@@ -112,6 +119,7 @@ export default function LobbyCard({ lobby, onLobbyJoined }: LobbyCardProps) {
       console.error("Erro ao entrar na lobby:", error.message);
     }
   };
+  
 
   return (
     <>

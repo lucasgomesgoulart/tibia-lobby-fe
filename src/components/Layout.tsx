@@ -12,6 +12,7 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   return (
+
     <SidebarProvider>
       <Header /> {/* O Header fica fixo no topo da página */}
       <div
@@ -45,5 +46,6 @@ export default function Layout({ children }: LayoutProps) {
         </div>
       </div>
     </SidebarProvider>
+
   );
 }

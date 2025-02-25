@@ -5,8 +5,8 @@ import Layout from "@/components/Layout";
 
 export default function Page() {
   return (
-    <Layout>
-      <LobbyList />
-    </Layout>
+      <Layout>
+        <LobbyList />
+      </Layout>
   );
 }

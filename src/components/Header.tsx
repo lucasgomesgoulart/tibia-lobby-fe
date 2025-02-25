@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
+import Image from "next/image";
 
 const menuItems = [
   {
@@ -66,14 +67,13 @@ export default function Header() {
 
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("user");
     window.location.href = "/login";
   };
 
   return (
     <header className="fixed top-0 left-0 right-0 bg-gradient-to-b from-black to-gray-900 text-white shadow-lg z-50">
       <nav className="flex justify-between items-center px-6 py-4 max-w-7xl mx-auto">
-
-        {/* Login ou Minha Conta */}
         <div
           className="relative"
           onMouseEnter={handleMouseEnterAccount}
@@ -81,9 +81,11 @@ export default function Header() {
         >
           {userLogged ? (
             <div className="flex items-center gap-3 cursor-pointer hover:text-blue-400">
-              <img
-                src="/avatars/default.png"
+              <Image
+                src="/images/geral-icons/Holy_Icon.gif"
                 alt="Avatar"
+                width={20}
+                height={20}
                 className="w-9 h-9 rounded-full border border-gray-500"
               />
               <span className="font-medium">Minha Conta</span>

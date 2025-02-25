@@ -10,14 +10,14 @@ export default function LobbyList() {
   const [lobbies, setLobbies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  // Inicializamos com undefined para indicar "não lido ainda"
+
   const [token, setToken] = useState<string | null | undefined>(undefined);
 
-  // Aguarda a montagem para acessar o localStorage
+ 
   useEffect(() => {
     setMounted(true);
     const tokenLocal = localStorage.getItem("token");
-    setToken(tokenLocal); // Pode ser uma string ou null
+    setToken(tokenLocal);
   }, []);
 
   const fetchLobbies = async () => {
@@ -30,6 +30,7 @@ export default function LobbyList() {
         },
       });
       const data = await response.json();
+      console.log(data)
       if (!response.ok) {
         throw new Error(data.message || "Erro ao buscar lobbies.");
       }
@@ -42,7 +43,7 @@ export default function LobbyList() {
   };
 
   useEffect(() => {
-    // Aguarda até que o token seja definido (diferente de undefined)
+   
     if (token === undefined) return;
 
     if (!token) {
@@ -51,7 +52,7 @@ export default function LobbyList() {
       return;
     }
 
-    // Se o token existe, limpa qualquer erro anterior e busca os lobbies
+   
     setError(null);
     fetchLobbies();
     const interval = setInterval(fetchLobbies, 5000);
@@ -75,7 +76,7 @@ export default function LobbyList() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 w-full max-w-[1440px] mx-auto">
           {lobbies.length > 0 ? (
             lobbies.map((lobby) => (
-              // Passa ownerId extraído do objeto owner e o callback onLobbyJoined
+             
               <LobbyCard
                 key={lobby.id}
                 lobby={{ ...lobby, ownerId: lobby.owner?.id }}

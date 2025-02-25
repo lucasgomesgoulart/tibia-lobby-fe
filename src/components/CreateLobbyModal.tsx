@@ -125,7 +125,7 @@ export default function CreateLobbyModal({ onClose, onLobbyCreated }: CreateLobb
             name="characterId"
             onChange={handleChange}
             value={formData.characterId}
-            required
+            // required
             className="w-full text-black p-2 rounded-md border border-black placeholder-gray-500"
           >
             <option value="">Selecione um personagem</option>

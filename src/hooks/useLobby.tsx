@@ -2,10 +2,13 @@ import { useState, useEffect } from "react";
 import API_BASE_URL from "@/apiConfig";
 
 interface Player {
+  isLeader: any;
   character: {
     id: string;
     name: string;
     vocation: string;
+    level: string;
+    isLeader: boolean;
   };
   left_at: number | null;
 }
@@ -22,67 +25,81 @@ export interface Lobby {
   maxPlayers: number;
   players: Player[];
   owner: Owner;
-  // Outros campos (minLevel, maxLevel, etc.) se necessário
+  // Outros campos, se necessário
+}
+
+export interface UserLobbyData {
+  lobby: Lobby;
+  myCharacterId: string;
 }
 
 interface UseLobbyReturn {
-  lobby: Lobby | null;
+  userLobby: UserLobbyData | null;
+  allLobbies: Lobby[];
   isLoggedIn: boolean;
   userId: string;
-  myCharacterId: string;
   loading: boolean;
   error: string | null;
   refresh: () => void;
 }
 
-/**
- * Retorna o userId armazenado no localStorage.
- * Aqui esperamos que o localStorage possua a chave "userId" contendo o UUID do usuário.
- */
-const getStoredUserId = (): string => {
-  return localStorage.getItem("userId") || "";
-};
-
-/**
- * Retorna o ID do personagem selecionado a partir dos dados armazenados na chave "characters".
- * Aqui esperamos que "characters" contenha um objeto JSON com a propriedade "data", que é um array de personagens.
- * Exemplo:
- * {
- *   "data": [
- *      { "id": "23334637-8f54-48b9-abce-d6e3802f8712", ... },
- *      ...
- *   ]
- * }
- *
- * Neste exemplo, usamos o ID do primeiro personagem.
- */
-const getStoredCharacterId = (): string => {
-  const stored = localStorage.getItem("characters");
-  if (!stored) return "";
-  try {
-    const parsed = JSON.parse(stored);
-    // Verifica se o objeto tem uma propriedade "data" que é um array
-    if (parsed && Array.isArray(parsed.data) && parsed.data.length > 0) {
-      return parsed.data[0].id;
-    }
-  } catch (err) {
-    console.error("Erro ao parsear 'characters' do localStorage:", err);
-  }
-  return "";
-};
 
 export function useLobby(): UseLobbyReturn {
-  const [lobby, setLobby] = useState<Lobby | null>(null);
+  const [userLobby, setUserLobby] = useState<UserLobbyData | null>(null);
+  const [allLobbies, setAllLobbies] = useState<Lobby[]>([]);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
-  const [userId, setUserId] = useState<string>("");
-  const [myCharacterId, setMyCharacterId] = useState<string>("");
+  const [userId, setUserId] = useState<any>("");
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchLobbyData = async () => {
+  // Busca se o usuário já está em uma lobby ativa
+  const fetchUserLobby = async (token: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/lobby-players/check`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        console.log("Nenhuma lobby ativa encontrada (check).");
+        setUserLobby(null);
+        return;
+      }
+      const result = await res.json();
+      console.log("Resposta de /lobby-players/check:", result);
+      // Se result.data.lobby existir, assume que o usuário está participando de uma lobby
+      if (result && result.data && result.data.lobby) {
+        setUserLobby({ lobby: result.data.lobby, myCharacterId: result.data.myCharacterId });
+      } else {
+        setUserLobby(null);
+      }
+    } catch (err: any) {
+      console.error("Erro em /lobby-players/check:", err);
+      setError(err.message);
+      setUserLobby(null);
+    }
+  };
+
+  // Busca a lista de todas as lobbies
+  const fetchAllLobbies = async (token: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/lobby`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Erro ao buscar lobbies.");
+      const result = await res.json();
+      if (Array.isArray(result.data)) {
+        setAllLobbies(result.data);
+      } else {
+        throw new Error("Formato de resposta inesperado em /lobby.");
+      }
+    } catch (err: any) {
+      console.error("Erro em /lobby:", err);
+      setError(err.message);
+    }
+  };
+
+  const fetchData = async () => {
     setLoading(true);
     setError(null);
-
     const token = localStorage.getItem("token");
     if (!token) {
       setIsLoggedIn(false);
@@ -90,71 +107,26 @@ export function useLobby(): UseLobbyReturn {
       return;
     }
     setIsLoggedIn(true);
+    const storedUserId = localStorage.getItem('user');
+    setUserId(storedUserId);
 
-    try {
-      const response = await fetch(`${API_BASE_URL}/lobby`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!response.ok) throw new Error("Erro ao buscar lobbies.");
-
-      const data = await response.json();
-      console.log("Lobbies recebidas:", data.data);
-      
-      if (!Array.isArray(data.data)) {
-        throw new Error("Formato de resposta inesperado.");
-      }
-
-      // Extrai o userId e o myCharacterId do localStorage
-      const storedUserId = getStoredUserId();
-      const storedCharacterId = getStoredCharacterId();
-      console.log("storedUserId:", storedUserId, "storedCharacterId:", storedCharacterId);
-      setUserId(storedUserId);
-      setMyCharacterId(storedCharacterId);
-
-      // Procura a lobby na qual o usuário esteja participando:
-      // - Se o usuário for o dono (lobby.owner.id === storedUserId)
-      // - OU se algum player ativo (left_at === null) tiver character.id igual ao storedCharacterId
-      const userLobby = data.data.find((lobby: Lobby) => {
-        const isOwner = lobby.owner && lobby.owner.id === storedUserId;
-        const isParticipant = lobby.players.some(
-          (player) =>
-            player.left_at === null &&
-            player.character &&
-            player.character.id === storedCharacterId
-        );
-        console.log(`Lobby ${lobby.title}: isOwner=${isOwner}, isParticipant=${isParticipant}`);
-        return isOwner || isParticipant;
-      });
-
-      if (!userLobby) {
-        console.log("Nenhuma lobby encontrada para o usuário.");
-        setLobby(null);
-      } else {
-        console.log("Lobby encontrada:", userLobby.title);
-        setLobby(userLobby);
-      }
-    } catch (err: any) {
-      console.error("Erro ao buscar lobbies:", err);
-      setError(err.message);
-      setLobby(null);
-    } finally {
-      setLoading(false);
-    }
+    await Promise.all([fetchUserLobby(token), fetchAllLobbies(token)]);
+    setLoading(false);
   };
 
   useEffect(() => {
-    fetchLobbyData();
+    fetchData();
   }, []);
 
   const refresh = () => {
-    fetchLobbyData();
+    fetchData();
   };
 
   return {
-    lobby,
+    userLobby,
+    allLobbies,
     isLoggedIn,
     userId,
-    myCharacterId,
     loading,
     error,
     refresh,
