@@ -1,20 +1,44 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { SidebarProvider } from "@/components/ui/sidebar";
 import Header from "@/components/Header";
 import LobbySidebar from "@/components/LobbySidebar";
 import CharacterSidebar from "@/components/CharacterSidebar";
+import API_BASE_URL from '@/apiConfig';
 
 interface LayoutProps {
   children: ReactNode;
 }
 
 export default function Layout({ children }: LayoutProps) {
+  const [user, setUser] = useState()
+  const [loading, setLoading] = useState(false);
+  const [err, setError] = useState('');
+
+  useEffect(() => {
+    async function getInfo() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/users/me`);
+        setLoading(true)
+        if (!response.ok) throw new Error('Falha ao buscar os dados do usuário');
+        const userData = await response.json();
+        setUser(userData);
+      } catch (err:any){
+        console.error('Erro ao buscar os dados do usuário:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    getInfo();
+  }, []);
+
   return (
 
+
     <SidebarProvider>
-      <Header /> {/* O Header fica fixo no topo da página */}
+      <Header/> {/* O Header fica fixo no topo da página */}
       <div
         className="relative flex flex-1 pt-20 h-screen"
         style={{ backgroundColor: "#4a6283" }}

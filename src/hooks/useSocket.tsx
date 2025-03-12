@@ -2,20 +2,18 @@
 import { useEffect, useState } from 'react';
 import io from 'socket.io-client';
 
-let socket : any;
-
 export const useSocket = () => {
   const [socketInstance, setSocketInstance] = useState(null);
 
   useEffect(() => {
-    // Altere a URL conforme necessário (por exemplo, 'http://localhost:3000')
-    socket = io('http://localhost:3000', {
-      // Se necessário, passe parâmetros, como o token
+    const socket = io('http://localhost:3000', {
       query: { token: localStorage.getItem('token') },
     });
 
     socket.on('connect', () => {
       console.log('Conectado ao Socket.IO:', socket.id);
+      // Emite o evento joinLobbyList quando a conexão for estabelecida
+      socket.emit("joinLobbyList");
     });
 
     setSocketInstance(socket);
@@ -24,6 +22,5 @@ export const useSocket = () => {
       socket.disconnect();
     };
   }, []);
-
   return socketInstance;
 };

@@ -35,7 +35,6 @@ interface Lobby {
   players: Player[];
   owner: {
     id: string;
-    // ...outras propriedades do owner
   };
 }
 
@@ -72,10 +71,8 @@ const getOutfitImage = (vocation: string) => {
 export default function LobbyCard({ lobby, onLobbyJoined }: LobbyCardProps) {
 
   const socket = useSocket();
-  const activePlayersCount = lobby.players.length;
+  const activePlayersCount = lobby.players?.length || 0;
   const { border, bg, tag } = activityStyles[lobby.activityType] || activityStyles.EVENT;
-
-  // Estado para controlar a abertura do modal de seleção de personagem
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Usa o hook para obter os personagens do usuário
@@ -106,21 +103,22 @@ export default function LobbyCard({ lobby, onLobbyJoined }: LobbyCardProps) {
       if (!response.ok) {
         throw new Error(data.message || "Erro ao entrar na lobby");
       }
-
+  
       if (socket) {
         socket.emit("joinLobbyRoom", lobby.id);
       }
   
       setIsModalOpen(false);
-      if (onLobbyJoined) {
-        onLobbyJoined();
-      }
+      
+      // Aumenta o delay para dar mais tempo ao backend de atualizar os dados
+      setTimeout(() => {
+        if (onLobbyJoined) onLobbyJoined();
+      }, 2000);
     } catch (error: any) {
       console.error("Erro ao entrar na lobby:", error.message);
     }
   };
   
-
   return (
     <>
       <Card
@@ -158,7 +156,7 @@ export default function LobbyCard({ lobby, onLobbyJoined }: LobbyCardProps) {
 
           {/* Lista de jogadores */}
           <div className="flex flex-col gap-2 mt-3 px-2 overflow-auto">
-            {lobby.players.map((player, index) => {
+            {lobby.players?.map((player, index) => {
               const isLeader = player.id === lobby.owner?.id;
               return (
                 <div
@@ -203,7 +201,6 @@ export default function LobbyCard({ lobby, onLobbyJoined }: LobbyCardProps) {
       </Card>
       {isModalOpen && (
         <CharacterSelectionModal
-
           characters={characters}
           onSelect={handleCharacterSelect}
           onClose={handleCloseModal}

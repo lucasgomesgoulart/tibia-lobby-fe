@@ -14,6 +14,7 @@ import {
 import Link from "next/link";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import Image from "next/image";
+import API_BASE_URL from "@/apiConfig";
 
 const menuItems = [
   {
@@ -45,16 +46,50 @@ const menuItems = [
   },
 ];
 
-export default function Header() {
+interface HeaderProps {
+  // Recebe o id do usuário, se houver, via props.
+  userId?: string;
+}
+
+export default function Header({ userId }: HeaderProps) {
   const [userLogged, setUserLogged] = useState<boolean>(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [openAccountMenu, setOpenAccountMenu] = useState<boolean>(false);
   const [parent] = useAutoAnimate();
+  const [userName, setUserName] = useState<string>("Minha Conta");
+
   let accountTimeout: NodeJS.Timeout | null = null;
 
   useEffect(() => {
+   
     setUserLogged(!!localStorage.getItem("token"));
   }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const id = userId || localStorage.getItem("user");
+    if (id) {
+      fetch(`${API_BASE_URL}/users/me`,{
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+      })
+      
+        .then((res) => {
+          if (!res.ok) throw new Error("Erro ao buscar os dados do usuário");
+          return res.json();
+        })
+        .then((data) => {
+          console.log(data)
+          setUserName(data.username || "Minha Conta");
+        })
+        .catch((err) => {
+          console.error("Erro ao buscar os dados do usuário:", err);
+          setUserName("Minha Conta");
+        });
+    }
+  }, [userId]);
 
   const handleMouseEnterAccount = () => {
     if (accountTimeout) clearTimeout(accountTimeout);
@@ -88,8 +123,12 @@ export default function Header() {
                 height={20}
                 className="w-9 h-9 rounded-full border border-gray-500"
               />
-              <span className="font-medium">Minha Conta</span>
-              <ChevronDown className={`h-4 w-4 transition-transform ${openAccountMenu ? "rotate-180" : ""}`} />
+              <span className="font-medium">{userName}</span>
+              <ChevronDown
+                className={`h-4 w-4 transition-transform ${
+                  openAccountMenu ? "rotate-180" : ""
+                }`}
+              />
             </div>
           ) : (
             <Link href="/login">
@@ -141,7 +180,9 @@ export default function Header() {
                 {menu.title}
                 {menu.items.length > 0 && (
                   <ChevronDown
-                    className={`h-4 w-4 transition-transform ${openMenu === menu.title ? "rotate-180" : ""}`}
+                    className={`h-4 w-4 transition-transform ${
+                      openMenu === menu.title ? "rotate-180" : ""
+                    }`}
                   />
                 )}
               </button>

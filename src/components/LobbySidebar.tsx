@@ -1,23 +1,60 @@
-import { useState } from "react";
+"use client";
+
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Trash2, LogOut, Users, Gamepad } from "lucide-react";
 import Image from "next/image";
 import API_BASE_URL from "@/apiConfig";
 import CreateLobbyModal from "./CreateLobbyModal";
 import { useLobby } from "@/hooks/useLobby";
+import { useSocket } from "@/hooks/useSocket";
 
 export default function LobbyDisplay() {
-  const {
-    userLobby,
-    isLoggedIn,
-    userId,
-    loading,
-    error,
-    refresh,
-  } = useLobby();
-
+  const { userLobby, isLoggedIn, userId, loading, error, refresh } = useLobby();
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const socket = useSocket();
 
+  // Ao detectar que o usuário está em uma lobby, entra na room específica
+  useEffect(() => {
+    if (socket && userLobby?.lobby?.id) {
+      console.log("Sidebar: entrando na room da lobby:", userLobby.lobby.id);
+      socket.emit("joinLobbyRoom", userLobby.lobby.id);
+    }
+  }, [socket, userLobby]);
+
+  // Listeners para atualizar a sidebar em tempo real
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on("lobbyDeleted", ({ lobbyId }) => {
+      console.log("Sidebar: lobbyDeleted recebido para lobby:", lobbyId);
+      refresh();
+    });
+    socket.on("lobbyUpdated", (update) => {
+      console.log("Sidebar: lobbyUpdated recebido:", update);
+      refresh();
+    });
+    socket.on("playerJoined", (newPlayer) => {
+      console.log("Sidebar: playerJoined recebido:", newPlayer);
+      refresh();
+    });
+    socket.on("playerLeft", (data) => {
+      console.log("Sidebar: playerLeft recebido:", data);
+      refresh();
+    });
+    socket.on("kickExpired", (data) => {
+      console.log("Sidebar: kickExpired recebido:", data);
+      refresh();
+    });
+
+    return () => {
+      socket.off("lobbyDeleted");
+      socket.off("lobbyUpdated");
+      socket.off("playerJoined");
+      socket.off("playerLeft");
+      socket.off("kickExpired");
+    };
+  }, [socket, refresh]);
 
   const handleLeaveOrDeleteLobby = async () => {
     try {
@@ -29,14 +66,20 @@ export default function LobbyDisplay() {
       const data = await response.json();
       if (!response.ok)
         throw new Error(data.message || "Erro ao atualizar a lobby");
+
       alert(data.message);
+
+      if (socket && userLobby?.lobby?.id) {
+        console.log("Sidebar: emitindo leaveLobbyRoom para a lobby:", userLobby.lobby.id);
+        socket.emit("leaveLobbyRoom", userLobby.lobby.id);
+      }
+
       refresh();
     } catch (err: any) {
       console.error("Erro ao atualizar a lobby:", err);
       alert(err.message || "Erro desconhecido ao atualizar a lobby");
     }
   };
-
 
   const handleKickPlayer = async (targetCharacterId: string) => {
     try {
@@ -77,7 +120,6 @@ export default function LobbyDisplay() {
     return <p className="text-red-500 text-sm text-center">{error}</p>;
   }
 
-
   if (!userLobby) {
     return (
       <>
@@ -99,22 +141,21 @@ export default function LobbyDisplay() {
   }
 
   const { lobby } = userLobby;
-
   const activePlayers = lobby.players.filter(
     (player) => player.left_at === null
   );
 
   return (
     <div className="bg-gray-800 p-4 rounded-md shadow-sm text-white space-y-4">
-
       <div className="flex items-center justify-between">
-        <h3 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-600">{lobby.title}</h3>
+        <h3 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-600">
+          {lobby.title}
+        </h3>
         <div className="flex items-center space-x-2">
-          <Gamepad className=" text-purple-400 w-7 h-7 text-gray-300" />
+          <Gamepad className="text-purple-400 w-7 h-7 text-gray-300" />
           <span className="text-sm text-gray-300">{lobby.activityType}</span>
         </div>
       </div>
-
 
       <div className="flex items-center space-x-3">
         <Users className="w-6 h-6 text-gray-300" />
@@ -123,22 +164,17 @@ export default function LobbyDisplay() {
         </p>
       </div>
 
-
       <div className="space-y-2 max-h-32 overflow-y-auto">
         {activePlayers.map((player, idx) => {
-
-          const isLeader = player.hasOwnProperty("isLeader")
-            ? player.isLeader
-            : false;
+          const isLeader = player.hasOwnProperty("isLeader") ? player.isLeader : false;
           return (
             <div
               key={idx}
-              className={`flex items-center p-2 rounded transition-all duration-200 ${isLeader
-                  ? "bg-gray-700 border border-yellow-400"
-                  : "bg-gray-700 hover:bg-gray-600"
-                }`}
+              className={`flex items-center p-2 rounded transition-all duration-200 ${
+                isLeader ? "bg-gray-700 border border-yellow-400" : "bg-gray-700 hover:bg-gray-600"
+              }`}
             >
-              <div className="flex items-center space-x-3 flex-1 min-w-[140px]">
+              <div className="flex items-center gap-3 flex-1 min-w-[140px]">
                 {isLeader ? (
                   <Image
                     src="/images/geral-icons/Shared_Lider_Icon.gif"
@@ -170,7 +206,6 @@ export default function LobbyDisplay() {
                   {player.character.level || "-"}
                 </span>
               </div>
-
               <div className="w-12 flex justify-end">
                 {lobby.owner.id === userId && !isLeader ? (
                   <Button
@@ -188,7 +223,6 @@ export default function LobbyDisplay() {
           );
         })}
       </div>
-
 
       <div className="flex justify-end space-x-3">
         {lobby.owner.id === userId ? (

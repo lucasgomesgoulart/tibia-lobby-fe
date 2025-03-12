@@ -43,31 +43,30 @@ interface UseLobbyReturn {
   refresh: () => void;
 }
 
-
 export function useLobby(): UseLobbyReturn {
   const [userLobby, setUserLobby] = useState<UserLobbyData | null>(null);
   const [allLobbies, setAllLobbies] = useState<Lobby[]>([]);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
-  const [userId, setUserId] = useState<any>("");
+  const [userId, setUserId] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Busca se o usuário já está em uma lobby ativa
+  // Busca a lobby do usuário
   const fetchUserLobby = async (token: string) => {
     try {
       const res = await fetch(`${API_BASE_URL}/lobby-players/check`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
-        console.log("Nenhuma lobby ativa encontrada (check).");
         setUserLobby(null);
         return;
       }
       const result = await res.json();
-      console.log("Resposta de /lobby-players/check:", result);
-      // Se result.data.lobby existir, assume que o usuário está participando de uma lobby
       if (result && result.data && result.data.lobby) {
-        setUserLobby({ lobby: result.data.lobby, myCharacterId: result.data.myCharacterId });
+        setUserLobby({
+          lobby: result.data.lobby,
+          myCharacterId: result.data.myCharacterId,
+        });
       } else {
         setUserLobby(null);
       }
@@ -97,6 +96,7 @@ export function useLobby(): UseLobbyReturn {
     }
   };
 
+  // Função para buscar os dados (lobby do usuário e lista de lobbies)
   const fetchData = async () => {
     setLoading(true);
     setError(null);
@@ -107,17 +107,19 @@ export function useLobby(): UseLobbyReturn {
       return;
     }
     setIsLoggedIn(true);
-    const storedUserId = localStorage.getItem('user');
+    const storedUserId = localStorage.getItem("user") || "";
     setUserId(storedUserId);
 
     await Promise.all([fetchUserLobby(token), fetchAllLobbies(token)]);
     setLoading(false);
   };
 
+  // Busca os dados na montagem do hook
   useEffect(() => {
     fetchData();
   }, []);
 
+  // Função refresh que pode ser chamada para atualizar os dados
   const refresh = () => {
     fetchData();
   };
