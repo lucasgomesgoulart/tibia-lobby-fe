@@ -4,13 +4,21 @@ import OutfitDruid from "../../public/images/outfits/Druid_Male.gif";
 import OutfitHunter from "../../public/images/outfits/Hunter_Male.gif";
 import OutfitKnight from "../../public/images/outfits/Knight_Male.gif";
 import OutfitMage from "../../public/images/outfits/Mage_Male.gif";
-import { Character } from "./lobbyCard";
-
 interface CharacterSelectionModalProps {
   characters: Character[];
   onSelect: (characterId: string) => void;
   onClose: () => void;
 }
+
+export interface Character {
+  id: string;
+  name: string;
+  vocation: string;
+  level: number | string;
+  world?: { name: string };
+  otServer?: { name: string };
+}
+
 
 const getOutfitImage = (vocation: string) => {
   switch (vocation.toLowerCase()) {

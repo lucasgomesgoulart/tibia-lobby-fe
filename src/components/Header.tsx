@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { IUser } from "@/hooks/useUser";
 import {
   Gamepad2,
   Sword,
@@ -47,11 +48,10 @@ const menuItems = [
 ];
 
 interface HeaderProps {
-  // Recebe o id do usuário, se houver, via props.
-  userId?: string;
+  user: IUser | null;
 }
 
-export default function Header({ userId }: HeaderProps) {
+export default function Header({ user }: HeaderProps) {
   const [userLogged, setUserLogged] = useState<boolean>(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [openAccountMenu, setOpenAccountMenu] = useState<boolean>(false);
@@ -60,28 +60,27 @@ export default function Header({ userId }: HeaderProps) {
 
   let accountTimeout: NodeJS.Timeout | null = null;
 
+  // Verifica se o usuário está logado
   useEffect(() => {
-   
     setUserLogged(!!localStorage.getItem("token"));
   }, []);
 
+  // Busca os dados do usuário uma única vez
   useEffect(() => {
     const token = localStorage.getItem("token");
-    const id = userId || localStorage.getItem("user");
-    if (id) {
-      fetch(`${API_BASE_URL}/users/me`,{
+    if (token) {
+      fetch(`${API_BASE_URL}/users/me`, {
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
       })
-      
         .then((res) => {
           if (!res.ok) throw new Error("Erro ao buscar os dados do usuário");
           return res.json();
         })
         .then((data) => {
-          console.log(data)
+          console.log("Dados do usuário:", data);
           setUserName(data.username || "Minha Conta");
         })
         .catch((err) => {
@@ -89,7 +88,7 @@ export default function Header({ userId }: HeaderProps) {
           setUserName("Minha Conta");
         });
     }
-  }, [userId]);
+  }, []); // Executa apenas uma vez
 
   const handleMouseEnterAccount = () => {
     if (accountTimeout) clearTimeout(accountTimeout);

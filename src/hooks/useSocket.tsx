@@ -1,19 +1,21 @@
-// hooks/useSocket.js
+// hooks/useSocket.ts
 import { useEffect, useState } from 'react';
-import io from 'socket.io-client';
+import { io, Socket } from 'socket.io-client';
 
-export const useSocket = () => {
-  const [socketInstance, setSocketInstance] = useState(null);
+export const useSocket = (): Socket | null => {
+  const [socketInstance, setSocketInstance] = useState<Socket | null>(null);
 
   useEffect(() => {
-    const socket = io('http://localhost:3000', {
-      query: { token: localStorage.getItem('token') },
+    const token = localStorage.getItem('token');
+    const socket: Socket = io('http://localhost:3000', {
+      query: { token },
+      transports: ['websocket'], // Opcional: se quiser forçar o uso de websocket
     });
 
     socket.on('connect', () => {
       console.log('Conectado ao Socket.IO:', socket.id);
       // Emite o evento joinLobbyList quando a conexão for estabelecida
-      socket.emit("joinLobbyList");
+      socket.emit('joinLobbyList');
     });
 
     setSocketInstance(socket);
@@ -22,5 +24,6 @@ export const useSocket = () => {
       socket.disconnect();
     };
   }, []);
+
   return socketInstance;
 };

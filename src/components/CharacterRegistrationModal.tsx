@@ -1,15 +1,19 @@
-'use client';
+"use client";
 
 import { AnimatePresence, motion } from 'framer-motion';
 import CharacterForm from './CharacterForm';
 
 interface CharacterRegistrationModalProps {
   isOpen: boolean;
-
   onClose: () => void;
+  onCharacterCreated: () => void; // Callback para notificar que um personagem foi criado com sucesso
 }
 
-export default function CharacterRegistrationModal({ isOpen, onClose }: CharacterRegistrationModalProps) {
+export default function CharacterRegistrationModal({
+  isOpen,
+  onClose,
+  onCharacterCreated,
+}: CharacterRegistrationModalProps) {
   return (
     <AnimatePresence>
       {isOpen && (
@@ -31,7 +35,7 @@ export default function CharacterRegistrationModal({ isOpen, onClose }: Characte
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
                 Cadastro de Personagem
               </h2>
-              <CharacterForm onClose={onClose} />
+              <CharacterForm onClose={onClose} onSuccess={onCharacterCreated} />
             </div>
           </motion.div>
         </motion.div>

@@ -1,4 +1,4 @@
-// /src/hooks/useCharacters.ts
+// Exemplo do hook useCharacters.ts
 import { useState, useEffect } from "react";
 import API_BASE_URL from "@/apiConfig";
 
@@ -8,23 +8,20 @@ export function useCharacters() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchCharacters = async () => {
+    setLoading(true);
+    setError(null);
     try {
+      const token = localStorage.getItem("token");
       const response = await fetch(`${API_BASE_URL}/characters`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();
-      if (response.ok) {
-        setCharacters(data.data || []);
-      } else {
-        setError(data.message || "Erro ao buscar personagens");
-      }
+      if (!response.ok) throw new Error(data.message || "Erro ao buscar personagens");
+      setCharacters(data.data || []);
     } catch (err: any) {
       setError(err.message);
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   };
 
   useEffect(() => {

@@ -6,6 +6,13 @@ import { Button } from "@/components/ui/button";
 import API_BASE_URL from "@/apiConfig.js";
 import { FaCheckCircle } from "react-icons/fa";
 import * as Tooltip from "@radix-ui/react-tooltip";
+import { IUser } from "@/hooks/useUser";
+
+interface CharacterSidebarProps {
+  user: IUser | null;
+  loading: boolean;
+  error: string;
+}
 
 interface Character {
   id: string;
@@ -26,7 +33,12 @@ interface VocationIcons {
   [key: string]: string;
 }
 
-export default function CharacterSidebar() {
+export default function CharacterSidebar({ user, loading, error }: CharacterSidebarProps) {
+
+  if (loading) return <p>Carregando characters...</p>;
+  if (error) return <p>{error}</p>;
+  if (!user) return <p>Nenhum usuário logado.</p>;
+
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [characters, setCharacters] = useState<Character[]>([]);
   const [userLogged, setUserLogged] = useState<boolean>(false);
