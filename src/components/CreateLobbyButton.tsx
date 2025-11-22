@@ -18,7 +18,7 @@ export default function CreateLobbyButton({ onLobbyCreated }: { onLobbyCreated: 
         <span className="flex-1 text-center">Criar Lobby</span>
       </Button>
 
-      {isOpen && <CreateLobbyModal onClose={() => setIsOpen(false)} onLobbyCreated={onLobbyCreated} />}
+      <CreateLobbyModal isOpen={isOpen} onClose={() => setIsOpen(false)} onLobbyCreated={onLobbyCreated} />
     </>
   );
 }

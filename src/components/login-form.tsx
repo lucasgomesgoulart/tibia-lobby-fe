@@ -3,10 +3,12 @@
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input2";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import API_BASE_URL from "@/apiConfig";
+import { authApi } from '@/lib/api/auth';
+import { toast } from 'react-toastify';
 
 export function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
   interface FormData {
@@ -26,24 +28,15 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
     
 
     try {
-      const response = await fetch("http://localhost:3000/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) {
-        throw new Error("Invalid credentials");
-      }
-
-      const data = await response.json();
-      
+      const data = await authApi.login(formData);
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", data.userId);
-      
+      toast.success('Login realizado com sucesso!');
       window.location.href = "/";
-    } catch (error) {
-      setError("Usuário ou senha incorretos.");
+    } catch (error: any) {
+      const msg = error?.message || 'Usuário ou senha incorretos.';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -74,6 +67,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
                 placeholder="Insira seu usuário"
                 required
                 onChange={handleLogin}
+                className="h-10"
               />
             </div>
             <div className="grid gap-2">
@@ -85,6 +79,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
                 placeholder="Insira sua senha"
                 required
                 onChange={handleLogin}
+                className="h-10"
               />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import API_BASE_URL from '@/apiConfig';
+import { usersApi } from '@/lib/api/users';
 
 export interface IUser {
   id: string;
@@ -28,16 +28,7 @@ export default function useUser(): UseUserReturn {
           throw new Error("Token não encontrado. Faça login para acessar os dados do usuário.");
         }
         // Envia o token no header para autenticar a requisição
-        const response = await fetch(`${API_BASE_URL}/users/me`, {
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-          }
-        });
-        if (!response.ok) {
-          throw new Error('Falha ao buscar os dados do usuário');
-        }
-        const data = await response.json();
+        const data = await usersApi.me();
         setUser(data);
       } catch (err: any) {
         console.error('Erro ao buscar os dados do usuário:', err);

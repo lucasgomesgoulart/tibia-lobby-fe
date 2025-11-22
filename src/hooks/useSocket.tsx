@@ -1,13 +1,14 @@
 // hooks/useSocket.ts
 import { useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { SOCKET_URL } from '@/config/env';
 
 export const useSocket = (): Socket | null => {
   const [socketInstance, setSocketInstance] = useState<Socket | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    const socket: Socket = io('http://localhost:3000', {
+    const socket: Socket = io(SOCKET_URL, {
       query: { token },
       transports: ['websocket'], // Opcional: se quiser forçar o uso de websocket
     });

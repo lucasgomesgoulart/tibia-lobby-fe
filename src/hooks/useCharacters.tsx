@@ -1,9 +1,10 @@
 // Exemplo do hook useCharacters.ts
 import { useState, useEffect } from "react";
-import API_BASE_URL from "@/apiConfig";
+import { charactersApi } from '@/lib/api/characters';
+import { Character } from '@/types/character';
 
 export function useCharacters() {
-  const [characters, setCharacters] = useState<any[]>([]);
+  const [characters, setCharacters] = useState<Character[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -11,13 +12,8 @@ export function useCharacters() {
     setLoading(true);
     setError(null);
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`${API_BASE_URL}/characters`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Erro ao buscar personagens");
-      setCharacters(data.data || []);
+      const res = await charactersApi.list();
+      setCharacters(res.data || []);
     } catch (err: any) {
       setError(err.message);
     }

@@ -1,169 +1,272 @@
-'use client';
-
-import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Slider } from "@/components/ui/slider";
-import API_BASE_URL from "@/apiConfig";
-import { useCharacters } from "@/hooks/useCharacters";
+"use client";
+import React, { useEffect, useState } from 'react';
+import API_BASE_URL from '../apiConfig';
+import { useCharacters } from '../hooks/useCharacters';
 
 interface CreateLobbyModalProps {
+  isOpen: boolean;
   onClose: () => void;
-  onLobbyCreated: (lobbyTitle: string) => void; // Nova prop para atualizar a interface
+  onLobbyCreated: (title: string) => void;
 }
 
-export default function CreateLobbyModal({ onClose, onLobbyCreated }: CreateLobbyModalProps) {
-  const initialFormData = {
-    title: "",
-    minPlayers: 2,
-    maxPlayers: 4,
-    minLevel: 1,
-    maxLevel: 0,
-    activityType: "",
-    characterId: "",
-    discordChannelLink: "https://discord.gg/fakelobby",
-  };
+interface ActivityTypeOption {
+  id: string;
+  name: string;
+}
 
-  const [formData, setFormData] = useState(initialFormData);
-  const [activityTypes, setActivityTypes] = useState<string[]>([]);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+interface FormState {
+  title: string;
+  minPlayers: number;
+  maxPlayers: number;
+  minLevel: number;
+  maxLevel: number;
+  activityTypeId: string;
+  characterId: string;
+  discordChannelLink: string;
+}
 
-  // Utiliza o hook para buscar os personagens
-  const { characters, loading: charactersLoading, error: charactersError, fetchCharacters } = useCharacters();
+const initialForm: FormState = {
+  title: '',
+  minPlayers: 2,
+  maxPlayers: 4,
+  minLevel: 1,
+  maxLevel: 0,
+  activityTypeId: '',
+  characterId: '',
+  discordChannelLink: 'https://discord.gg/fakelobby',
+};
 
-  // Busca os tipos de atividade
+export const CreateLobbyModal: React.FC<CreateLobbyModalProps> = ({ isOpen, onClose, onLobbyCreated }) => {
+  const [form, setForm] = useState<FormState>(initialForm);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [activityTypes, setActivityTypes] = useState<ActivityTypeOption[]>([]);
+
+  const { characters, loading: charactersLoading, error: charactersError } = useCharacters();
+
   useEffect(() => {
-    const fetchActivityTypes = async () => {
+    if (!isOpen) return;
+    const loadActivityTypes = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/activeType`);
-        const data = await response.json();
-        setActivityTypes(data);
-      } catch (error) {
-        console.error("Erro ao buscar tipos de atividade:", error);
+        const res = await fetch(`${API_BASE_URL}/activeType`);
+        const data = await res.json();
+        const list: ActivityTypeOption[] = Array.isArray(data) ? data.filter((d: any) => d && d.id && d.name) : [];
+        setActivityTypes(list);
+      } catch (err) {
+        console.error('Falha ao buscar activity types', err);
+        setActivityTypes([]);
       }
     };
+    loadActivityTypes();
+  }, [isOpen]);
 
-    fetchActivityTypes();
-  }, []);
-
-  // Reseta o formulário ao fechar o modal
   useEffect(() => {
-    setFormData(initialFormData);
-    setErrorMessage(null);
-  }, [onClose]);
+    if (isOpen) {
+      setForm(initialForm); // reset ao abrir
+      setErrorMsg(null);
+    }
+  }, [isOpen]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSliderChange = (value: number[], field: "minPlayers" | "maxPlayers") => {
-    setFormData({ ...formData, [field]: value[0] });
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: name.includes('Players') || name.includes('Level') ? Number(value) : value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMessage(null);
+    setErrorMsg(null);
 
+    if (!form.activityTypeId) {
+      setErrorMsg('Selecione um tipo de atividade.');
+      return;
+    }
+    if (!form.characterId) {
+      setErrorMsg('Selecione um personagem.');
+      return;
+    }
+    if (form.minPlayers > form.maxPlayers) {
+      setErrorMsg('Min jogadores não pode exceder Max jogadores.');
+      return;
+    }
+    if (form.minLevel > form.maxLevel && form.maxLevel !== 0) {
+      setErrorMsg('Min level não pode exceder Max level.');
+      return;
+    }
+
+    const payload = {
+      title: form.title.trim(),
+      minPlayers: form.minPlayers,
+      maxPlayers: form.maxPlayers,
+      minLevel: form.minLevel,
+      maxLevel: form.maxLevel,
+      discordChannelLink: form.discordChannelLink,
+      characterId: form.characterId,
+      activityTypeId: form.activityTypeId,
+    };
+
+    setSubmitting(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/lobby`, {
-        method: "POST",
+      const res = await fetch(`${API_BASE_URL}/lobby`, {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Erro desconhecido ao criar lobby");
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || 'Erro desconhecido ao criar lobby');
       }
-
-      onLobbyCreated(formData.title); // Atualiza a interface e fecha o modal
-    } catch (error: any) {
-      setErrorMessage(error.message);
+      onLobbyCreated(payload.title);
+      onClose();
+    } catch (err: any) {
+      setErrorMsg(err.message);
+    } finally {
+      setSubmitting(false);
     }
   };
 
+  if (!isOpen) return null;
+
   return (
-    <Dialog open onOpenChange={onClose}>
-      <DialogContent className="bg-white text-black p-6 rounded-md shadow-lg">
-        <DialogHeader className="border-b border-gray-400 mb-4">
-          <DialogTitle className="text-left text-lg">Criar Nova Lobby</DialogTitle>
-        </DialogHeader>
-
-        {errorMessage && <p className="text-red-500 text-lg text-center">{errorMessage}</p>}
-
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+      <div className="bg-white w-full max-w-lg rounded-lg shadow-lg p-6 relative">
+        <button
+          onClick={onClose}
+          className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+          aria-label="Fechar modal"
+        >
+          ✕
+        </button>
+        <h2 className="text-xl font-semibold mb-4 text-gray-800">Criar Lobby</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
-            name="title"
-            onChange={handleChange}
-            value={formData.title}
-            required
-            className="border border-black placeholder-gray-500 text-black"
-            placeholder="Insira o título da lobby"
-          />
-
-          <select
-            name="activityType"
-            onChange={handleChange}
-            value={formData.activityType}
-            required
-            className="w-full text-black p-2 rounded-md border border-black placeholder-gray-500"
-          >
-            <option value="">Selecione um tipo de atividade</option>
-            {activityTypes.map((type) => (
-              <option key={type} value={type}>
-                {type}
-              </option>
-            ))}
-          </select>
-
-          <select
-            name="characterId"
-            onChange={handleChange}
-            value={formData.characterId}
-            // required
-            className="w-full text-black p-2 rounded-md border border-black placeholder-gray-500"
-          >
-            <option value="">Selecione um personagem</option>
-            {charactersLoading ? (
-              <option>Carregando...</option>
-            ) : charactersError ? (
-              <option>Erro ao carregar personagens</option>
-            ) : (
-              characters.map((char: any) => (
-                <option key={char.id} value={char.id}>
-                  {char.name}
-                </option>
-              ))
-            )}
-          </select>
-
-          <label className="block">Mínimo de Jogadores: {formData.minPlayers}</label>
-          <Slider
-            defaultValue={[formData.minPlayers]}
-            max={20}
-            min={2}
-            step={1}
-            onValueChange={(value) => handleSliderChange(value, "minPlayers")}
-          />
-
-          <label className="block">Máximo de Jogadores: {formData.maxPlayers}</label>
-          <Slider
-            defaultValue={[formData.maxPlayers]}
-            max={35}
-            step={1}
-            onValueChange={(value) => handleSliderChange(value, "maxPlayers")}
-          />
-
-          <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-800">
-            Criar Lobby
-          </Button>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Título</label>
+            <input
+              name="title"
+              value={form.title}
+              onChange={handleChange}
+              required
+              className="w-full text-black p-2 rounded-md border border-gray-300"
+              placeholder="Nome do lobby"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Min Jogadores</label>
+              <input
+                type="number"
+                name="minPlayers"
+                min={1}
+                value={form.minPlayers}
+                onChange={handleChange}
+                className="w-full text-black p-2 rounded-md border border-gray-300"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Max Jogadores</label>
+              <input
+                type="number"
+                name="maxPlayers"
+                min={form.minPlayers}
+                value={form.maxPlayers}
+                onChange={handleChange}
+                className="w-full text-black p-2 rounded-md border border-gray-300"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Min Level</label>
+              <input
+                type="number"
+                name="minLevel"
+                min={1}
+                value={form.minLevel}
+                onChange={handleChange}
+                className="w-full text-black p-2 rounded-md border border-gray-300"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Max Level (0 = sem limite)</label>
+              <input
+                type="number"
+                name="maxLevel"
+                min={0}
+                value={form.maxLevel}
+                onChange={handleChange}
+                className="w-full text-black p-2 rounded-md border border-gray-300"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Tipo de Atividade</label>
+            <select
+              name="activityTypeId"
+              value={form.activityTypeId}
+              onChange={handleChange}
+              required
+              className="w-full text-black p-2 rounded-md border border-gray-300"
+            >
+              <option value="">Selecione...</option>
+              {activityTypes.map((t) => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Personagem</label>
+            <select
+              name="characterId"
+              value={form.characterId}
+              onChange={handleChange}
+              required
+              className="w-full text-black p-2 rounded-md border border-gray-300"
+            >
+              <option value="">Selecione...</option>
+              {charactersLoading ? (
+                <option>Carregando...</option>
+              ) : charactersError ? (
+                <option>Erro ao carregar</option>
+              ) : (
+                characters.map((c: any) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))
+              )}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Link Discord</label>
+            <input
+              name="discordChannelLink"
+              value={form.discordChannelLink}
+              onChange={handleChange}
+              className="w-full text-black p-2 rounded-md border border-gray-300"
+            />
+          </div>
+          {errorMsg && <p className="text-red-600 text-sm">{errorMsg}</p>}
+          <div className="flex justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 rounded-md border text-gray-700 bg-gray-100 hover:bg-gray-200"
+              disabled={submitting}
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60"
+            >
+              {submitting ? 'Criando...' : 'Criar Lobby'}
+            </button>
+          </div>
         </form>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
-}
+};
+
+export default CreateLobbyModal;

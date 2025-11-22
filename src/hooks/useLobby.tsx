@@ -1,37 +1,8 @@
-import { useState, useEffect } from "react";
-import API_BASE_URL from "@/apiConfig";
+import { useState, useEffect } from 'react';
+import { lobbiesApi } from '@/lib/api/lobbies';
+import { Lobby, UserLobbyData } from '@/types/lobby';
 
-interface Player {
-  id: string;
-  isLeader: boolean;
-  character: {
-    id: string;
-    name: string;
-    vocation: string;
-    level: string;
-  };
-  left_at: number | null;
-}
-
-interface Owner {
-  id: string;
-  username: string;
-}
-
-export interface Lobby {
-  id: string;
-  title: string;
-  activityType: string;
-  maxPlayers: number;
-  players: Player[];
-  owner: Owner;
-  // Outros campos, se necessário
-}
-
-export interface UserLobbyData {
-  lobby: Lobby;
-  myCharacterId: string;
-}
+// Tipos movidos para src/types/lobby.ts
 
 interface UseLobbyReturn {
   userLobby: UserLobbyData | null;
@@ -61,11 +32,7 @@ export function useLobby(): UseLobbyReturn {
     }
     setIsLoggedIn(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/lobbies/overview`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error("Erro ao buscar o overview.");
-      const result = await res.json();
+      const result = await lobbiesApi.overview();
       if (result?.data) {
         setAllLobbies(result.data.allLobbies || []);
         setUserLobby(result.data.userLobby || null);
@@ -74,7 +41,7 @@ export function useLobby(): UseLobbyReturn {
         setAllLobbies([]);
       }
     } catch (err: any) {
-      console.error("Erro em /lobbies/overview:", err);
+      console.error('Erro em lobbiesApi.overview:', err);
       setError(err.message);
     }
     setLoading(false);

@@ -5,6 +5,7 @@ import LobbyFilter from "./LobbyFilter";
 import LobbyCard from "./lobbyCard";
 import { useLobby } from "@/hooks/useLobby";
 import { useSocket } from "@/hooks/useSocket";
+import CreateLobbyButton from "./CreateLobbyButton";
 
 export default function LobbyList() {
   // Usa o hook useLobby que já retorna allLobbies, loading, error e refresh
@@ -50,7 +51,10 @@ export default function LobbyList() {
 
   return (
     <div className="space-y-4">
-      <LobbyFilter onFilter={handleFilterResults} />
+      <div className="flex justify-between items-center mb-4">
+        <LobbyFilter onFilter={handleFilterResults} />
+        <CreateLobbyButton onLobbyCreated={refresh} />
+      </div>
       {loading ? (
         <p className="text-white text-center">Carregando lobbies...</p>
       ) : error ? (

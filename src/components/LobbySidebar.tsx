@@ -177,24 +177,23 @@ export default function LobbySidebar({ user, loading, error }: LobbySidebarProps
         <Button onClick={() => setShowCreateModal(true)} className="mt-4 w-full">
           Criar Lobby
         </Button>
-        {showCreateModal && (
-          <CreateLobbyModal
-            onClose={() => setShowCreateModal(false)}
-            onLobbyCreated={() => {
-              setShowCreateModal(false);
-              refresh();
-            }}
-          />
-        )}
+        <CreateLobbyModal
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          onLobbyCreated={() => {
+            setShowCreateModal(false);
+            refresh();
+          }}
+        />
       </div>
     );
   }
 
   const { lobby } = userLobby;
   // Usa o type assertion para garantir que players está como ILobbyPlayer[]
-  const activePlayers = (lobby.players as ILobbyPlayer[]).filter(
+  const activePlayers = lobby.players.filter(
     (player) => player.left_at === null
-  );
+  ) as ILobbyPlayer[];
 
   return (
     <div className="bg-gray-800 p-4 rounded-md shadow-sm text-white space-y-4">
@@ -263,7 +262,7 @@ export default function LobbySidebar({ user, loading, error }: LobbySidebarProps
               </div>
               <div className="w-12 flex justify-end">
                 {/* Usa a flag isOwner em vez de comparar com userId */}
-                {lobby.isOwner && !isLeader ? (
+                {(user?.id === lobby.owner.id) && !isLeader ? (
                   <Button
                     variant="destructive"
                     onClick={() => handleKickPlayer(player.character.id)}
@@ -281,7 +280,7 @@ export default function LobbySidebar({ user, loading, error }: LobbySidebarProps
       </div>
 
       <div className="flex justify-end space-x-3">
-        {lobby.isOwner ? (
+        {(user?.id === lobby.owner.id) ? (
           <Button
             variant="destructive"
             className="bg-gradient-to-r from-red-500 to-pink-600"
