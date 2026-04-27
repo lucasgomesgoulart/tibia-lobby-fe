@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Card } from "@/components/ui/card";
-import { Users, Activity } from "lucide-react";
+import { Users, Activity, Link as LinkIcon, Sword, Shield } from "lucide-react";
 import OutfitDruid from "../../public/images/outfits/Druid_Male.gif";
 import OutfitHunter from "../../public/images/outfits/Hunter_Male.gif";
 import OutfitKnight from "../../public/images/outfits/Knight_Male.gif";
@@ -14,29 +14,7 @@ import API_BASE_URL from "@/apiConfig";
 import { useCharacters } from "@/hooks/useCharacters";
 import { useSocket } from '@/hooks/useSocket';
 
-interface Player {
-  id: string; // ID do jogador (precisa estar presente)
-  character: {
-    name: string;
-    vocation: string;
-  };
-}
-
-interface Lobby {
-  id: string;
-  title: string;
-  minLevel: number;
-  maxLevel: number;
-  maxPlayers: number;
-  minPlayers: number;
-  activityType: string;
-  discordChannelLink: string;
-  created_at: string;
-  players: Player[];
-  owner: {
-    id: string;
-  };
-}
+import { Lobby } from "@/types/lobby";
 
 interface LobbyCardProps {
   lobby: Lobby;
@@ -71,9 +49,16 @@ const getOutfitImage = (vocation: string) => {
 export default function LobbyCard({ lobby, onLobbyJoined }: LobbyCardProps) {
 
   const socket = useSocket();
-  const activePlayersCount = lobby.players?.length || 0;
-  const { border, bg, tag } = activityStyles[lobby.activityType] || activityStyles.EVENT;
+  const activePlayers = useMemo(
+    () => (lobby.players || []).filter((p) => !p.left_at),
+    [lobby.players]
+  );
+  const activePlayersCount = activePlayers.length || 0;
+  const activityName = lobby.activityType?.name || "EVENT";
+  const { border, bg, tag } = activityStyles[activityName] || activityStyles.EVENT;
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const occupancy = Math.min(1, activePlayersCount / (lobby.maxPlayers || 1));
+  const availableSlots = Math.max(0, (lobby.maxPlayers || 0) - activePlayersCount);
 
   // Usa o hook para obter os personagens do usuário
   const { characters, loading, error } = useCharacters();
@@ -122,82 +107,103 @@ export default function LobbyCard({ lobby, onLobbyJoined }: LobbyCardProps) {
   return (
     <>
       <Card
-        className={`relative p-4 shadow-xl rounded-xl ${bg} ${border} border-2 overflow-hidden h-[370px] flex flex-col justify-between`}
+        className={`relative p-4 shadow-xl rounded-xl ${bg} ${border} border-2 overflow-hidden h-[380px] flex flex-col gap-3 text-white`}
       >
-        {/* TAG do tipo de atividade */}
-        <div className={`absolute top-0 right-0 px-3 py-1 text-xs font-bold uppercase rounded-bl-lg ${tag}`}>
-          {lobby.activityType}
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.08em] text-white/70">Lobby</p>
+            <h2 className="font-bold text-lg leading-tight">{lobby.title}</h2>
+            <div className="flex items-center gap-3 text-xs text-white/70 mt-1">
+              <span className="flex items-center gap-1"><Users className="h-4 w-4" /> {activePlayersCount}/{lobby.maxPlayers}</span>
+              <span className="flex items-center gap-1"><Activity className="h-4 w-4" /> lvl {lobby.minLevel}-{lobby.maxLevel || '∞'}</span>
+            </div>
+          </div>
+          <div className={`px-3 py-1 text-xs font-bold uppercase rounded-lg ${tag}`}>{activityName}</div>
         </div>
 
-        <div className="relative z-10 flex flex-col justify-start h-full text-white">
-          <h2 className="font-bold mt-2 mb-2 text-center uppercase text-sm">{lobby.title}</h2>
-
-          <div className="flex justify-between text-xs mb-2 px-2">
-            <div className="flex items-center gap-1">
-              <Users className="h-4 w-4" />
-              {activePlayersCount}/{lobby.maxPlayers} Jogadores
-            </div>
-            <div className="flex items-center gap-1">
-              <Activity className="h-4 w-4" /> {lobby.activityType}
-            </div>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-xs text-white/70">
+            <span>Ocupação</span>
+            <span>{Math.round(occupancy * 100)}%</span>
           </div>
-
-          {/* Seção de níveis */}
-          <div className="flex justify-around items-center bg-white/20 dark:bg-black/40 p-2 rounded-md mx-2">
-            <div className="text-center">
-              <p className="text-xs text-white/80">Nível Mínimo</p>
-              <p className="font-bold text-sm">{lobby.minLevel}</p>
-            </div>
-            <div className="text-center">
-              <p className="text-xs text-white/80">Nível Máximo</p>
-              <p className="font-bold text-sm">{lobby.maxLevel}</p>
-            </div>
+          <div className="h-2 rounded-full bg-black/30 overflow-hidden">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-cyan-400 transition-all"
+              style={{ width: `${occupancy * 100}%` }}
+            />
           </div>
+        </div>
 
-          {/* Lista de jogadores */}
-          <div className="flex flex-col gap-2 mt-3 px-2 overflow-auto">
-            {lobby.players?.map((player, index) => {
-              const isLeader = player.id === lobby.owner?.id;
+        <div className="grid grid-cols-2 gap-2 text-xs text-white/80">
+          <div className="flex items-center gap-2 rounded-lg border border-white/10 px-2 py-1">
+            <Sword className="h-4 w-4 text-emerald-300" />
+            <span>Min {lobby.minPlayers} / Max {lobby.maxPlayers} players</span>
+          </div>
+          <div className="flex items-center gap-2 rounded-lg border border-white/10 px-2 py-1">
+            <Shield className="h-4 w-4 text-sky-300" />
+            <span>Nível {lobby.minLevel} - {lobby.maxLevel || '∞'}</span>
+          </div>
+        </div>
+
+        <div className="flex-1 flex flex-col gap-2 overflow-hidden">
+          <p className="text-[11px] uppercase tracking-[0.08em] text-white/60">Jogadores</p>
+          <div className="flex-1 overflow-auto space-y-2 pr-1">
+            {activePlayers.map((player, index) => {
+              const isLeader = player.isLeader || player.character.id === lobby.owner?.id;
               return (
                 <div
-                  key={index}
-                  className={`flex items-center justify-between p-2 rounded-md border ${
-                    isLeader ? "border-yellow-400 animate-pulse" : "border-red-700/50"
-                  } ${bg} backdrop-blur-md shadow-md`}
+                  key={`${player.id}-${index}`}
+                  className={`flex items-center justify-between p-2 rounded-lg border border-white/10 bg-white/5 ${isLeader ? "ring-1 ring-yellow-400/60" : ""}`}
                 >
                   <div className="flex items-center gap-3">
                     <img
                       src={getOutfitImage(player.character.vocation).src}
                       alt={player.character.vocation}
-                      className={`h-12 w-12 object-contain shadow-lg ${isLeader ? "ring-4 ring-yellow-400" : ""}`}
+                      className={`h-10 w-10 object-contain rounded-md ${isLeader ? "ring-2 ring-yellow-400" : ""}`}
                     />
-                    <span className="blurred-name text-white/90 font-semibold">{player.character.name}</span>
+                    <div>
+                      <p className="font-semibold text-sm">{player.character.name}</p>
+                      <p className="text-[11px] text-white/60">{player.character.vocation}</p>
+                    </div>
                   </div>
-                  <span className="text-xs font-medium text-white/80">{player.character.vocation}</span>
+                  {isLeader && <span className="text-[10px] uppercase font-semibold text-yellow-300">Líder</span>}
                 </div>
               );
             })}
-          </div>
-
-          {/* Botão de entrada */}
-          <div className="flex justify-center mt-auto">
-            <Button
-              className="text-blue-400 hover:text-white transition-colors mt-2 text-lg"
-              onClick={handleOpenModal}
-            >
-              <FiArrowRight />
-              Entrar
-            </Button>
+            {availableSlots > 0 && Array.from({ length: availableSlots }).map((_, idx) => (
+              <div key={`slot-${idx}`} className="flex items-center justify-between p-2 rounded-lg border border-dashed border-white/15 text-white/50 bg-black/20">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-md border border-white/10 bg-black/30" />
+                  <div>
+                    <p className="font-semibold text-sm">Slot livre</p>
+                    <p className="text-[11px]">Aguardando jogador</p>
+                  </div>
+                </div>
+                <span className="text-[10px] uppercase">Convidar</span>
+              </div>
+            ))}
           </div>
         </div>
 
-        <style jsx>{`
-          .blurred-name {
-            filter: blur(5px);
-            user-select: none;
-            pointer-events: none;
-          }
-        `}</style>
+        <div className="flex items-center justify-between gap-2 mt-auto">
+          <Button
+            className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white"
+            onClick={handleOpenModal}
+          >
+            <FiArrowRight className="mr-2" />
+            Entrar
+          </Button>
+          {lobby.discordChannelLink && (
+            <a
+              href={lobby.discordChannelLink}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1 text-xs text-white/80 px-3 py-2 rounded-lg border border-white/10 hover:border-white/30 transition"
+            >
+              <LinkIcon className="h-4 w-4" /> Discord
+            </a>
+          )}
+        </div>
       </Card>
       {isModalOpen && (
         <CharacterSelectionModal

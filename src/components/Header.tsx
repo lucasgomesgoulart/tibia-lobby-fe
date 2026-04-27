@@ -48,7 +48,7 @@ const menuItems = [
 ];
 
 interface HeaderProps {
-  user: IUser | null;
+  user?: IUser | null;
 }
 
 export default function Header({ user }: HeaderProps) {

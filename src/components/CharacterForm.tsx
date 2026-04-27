@@ -21,9 +21,10 @@ interface OtServer {
 
 interface CharacterFormProps {
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
-export default function CharacterForm({ onClose }: CharacterFormProps) {
+export default function CharacterForm({ onClose, onSuccess }: CharacterFormProps) {
   const [name, setName] = useState<string>('');
   const [serverType, setServerType] = useState<"GLOBAL" | "OTSERVER">("GLOBAL");
   const [selectedVocation, setSelectedVocation] = useState<string>('');
@@ -37,7 +38,7 @@ export default function CharacterForm({ onClose }: CharacterFormProps) {
       try {
         const response = await fetch(`${API_BASE_URL}/otservers`);
         const data = await response.json();
-        setOtServers(data.data || []);
+        setOtServers(data || []);
       } catch (error) {
         console.error("Erro ao buscar OTServers:", error);
       }
@@ -60,11 +61,16 @@ export default function CharacterForm({ onClose }: CharacterFormProps) {
     let payload: Record<string, any> = { name, serverType };
 
     if (serverType === 'OTSERVER') {
+      if (!selectedOtServer || !selectedVocation) {
+        alert('Selecione um OTServer e uma vocação.');
+        setIsLoading(false);
+        return;
+      }
       payload = {
         ...payload,
         vocation: selectedVocation,
         otServerId: selectedOtServer,
-        otServerWorldId: selectedOtServerWorld,
+        worldId: selectedOtServerWorld || undefined,
       };
     }
 
@@ -81,6 +87,7 @@ export default function CharacterForm({ onClose }: CharacterFormProps) {
       if (response.ok) {
         alert('Personagem cadastrado com sucesso!');
         onClose();
+        onSuccess?.();
       } else {
         const errorData = await response.json();
         alert(`Erro ao cadastrar o personagem: ${errorData.message}`);

@@ -29,7 +29,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
 
     try {
       const data = await authApi.login(formData);
-      localStorage.setItem("token", data.token);
+      localStorage.setItem("token", data.access_token);
       localStorage.setItem("user", data.userId);
       toast.success('Login realizado com sucesso!');
       window.location.href = "/";

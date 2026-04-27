@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import { lobbiesApi } from '@/lib/api/lobbies';
-import { Lobby, UserLobbyData } from '@/types/lobby';
-
-// Tipos movidos para src/types/lobby.ts
+import { Lobby, UserLobbyData, PaginatedLobbies } from '@/types/lobby';
 
 interface UseLobbyReturn {
   userLobby: UserLobbyData | null;
@@ -33,13 +31,13 @@ export function useLobby(): UseLobbyReturn {
     setIsLoggedIn(true);
     try {
       const result = await lobbiesApi.overview();
-      if (result?.data) {
-        setAllLobbies(result.data.allLobbies || []);
-        setUserLobby(result.data.userLobby || null);
-      } else {
-        setUserLobby(null);
-        setAllLobbies([]);
-      }
+      const all = result?.data?.allLobbies || [];
+      const uniqueActive = all.map((lobby: Lobby) => ({
+        ...lobby,
+        players: (lobby.players || []).filter((p) => !p.left_at),
+      }));
+      setAllLobbies(uniqueActive);
+      setUserLobby(result?.data?.userLobby || null);
     } catch (err: any) {
       console.error('Erro em lobbiesApi.overview:', err);
       setError(err.message);

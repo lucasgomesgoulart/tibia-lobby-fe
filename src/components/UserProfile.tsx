@@ -53,7 +53,7 @@ export default function UserProfile({ user }: UserProfileProps) {
 
   const handleSubmit = async () => {
     try {
-      await fetch(`${API_BASE_URL}/users/${formData.username}`, {
+      await fetch(`${API_BASE_URL}/users/${(user as any).id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

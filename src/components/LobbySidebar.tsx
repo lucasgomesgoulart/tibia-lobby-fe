@@ -10,11 +10,10 @@ import { useLobby } from "@/hooks/useLobby";
 import { useSocket } from "@/hooks/useSocket";
 import { IUser } from "@/hooks/useUser";
 
-// Exemplo de interface para LobbyPlayer
 export interface ILobbyPlayer {
   id: string;
-  left_at: number | null;
-  isLeader: boolean;
+  left_at: string | null;
+  isLeader?: boolean;
   character: {
     id: string;
     name: string;
@@ -29,7 +28,6 @@ interface LobbySidebarProps {
   error: string;
 }
 
-// Supondo que a resposta da lobby (userLobby.lobby) agora inclui a flag isOwner
 export interface ILobby {
   id: string;
   title: string;
@@ -37,7 +35,7 @@ export interface ILobby {
   maxLevel: number;
   maxPlayers: number;
   minPlayers: number;
-  activityType: string;
+  activityType: { id: string; name: string };
   owner: {
     id: string;
     username: string;
@@ -45,7 +43,6 @@ export interface ILobby {
   players: ILobbyPlayer[];
   discordChannelLink: string;
   isDeleted: boolean;
-  isOwner: boolean; // flag informada pelo backend
   created_at: string;
   updated_at: string;
 }
@@ -53,58 +50,27 @@ export interface ILobby {
 export default function LobbySidebar({ user, loading, error }: LobbySidebarProps) {
   const { userLobby, isLoggedIn, refresh } = useLobby();
   const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
-  const socket = useSocket(); // Agora tipado como Socket | null
+  const socket = useSocket();
 
-  // Ao detectar que o usuário possui uma lobby, entra na room específica
   useEffect(() => {
     if (socket && userLobby?.lobby?.id) {
-      console.log("LobbySidebar: Entrando na room da lobby:", userLobby.lobby.id);
       socket.emit("joinLobbyRoom", userLobby.lobby.id);
     }
   }, [socket, userLobby]);
 
-  // Listeners para atualizar a sidebar em tempo real
   useEffect(() => {
     if (!socket) return;
 
-    const handleLobbyDeleted = ({ lobbyId }: { lobbyId: string }) => {
-      console.log("LobbySidebar: lobbyDeleted recebido para lobby:", lobbyId);
-      refresh();
+    const handlers: Record<string, (...args: any[]) => void> = {
+      lobbyDeleted: () => refresh(),
+      lobbyUpdated: () => refresh(),
+      playerJoined: () => refresh(),
+      playerLeft: () => refresh(),
+      kickExpired: () => refresh(),
     };
 
-    const handleLobbyUpdated = (update: any) => {
-      console.log("LobbySidebar: lobbyUpdated recebido:", update);
-      refresh();
-    };
-
-    const handlePlayerJoined = (newPlayer: any) => {
-      console.log("LobbySidebar: playerJoined recebido:", newPlayer);
-      refresh();
-    };
-
-    const handlePlayerLeft = (data: any) => {
-      console.log("LobbySidebar: playerLeft recebido:", data);
-      refresh();
-    };
-
-    const handleKickExpired = (data: any) => {
-      console.log("LobbySidebar: kickExpired recebido:", data);
-      refresh();
-    };
-
-    socket.on("lobbyDeleted", handleLobbyDeleted);
-    socket.on("lobbyUpdated", handleLobbyUpdated);
-    socket.on("playerJoined", handlePlayerJoined);
-    socket.on("playerLeft", handlePlayerLeft);
-    socket.on("kickExpired", handleKickExpired);
-
-    return () => {
-      socket.off("lobbyDeleted", handleLobbyDeleted);
-      socket.off("lobbyUpdated", handleLobbyUpdated);
-      socket.off("playerJoined", handlePlayerJoined);
-      socket.off("playerLeft", handlePlayerLeft);
-      socket.off("kickExpired", handleKickExpired);
-    };
+    Object.entries(handlers).forEach(([event, handler]) => socket.on(event, handler));
+    return () => Object.entries(handlers).forEach(([event, handler]) => socket.off(event, handler));
   }, [socket, refresh]);
 
   const handleLeaveOrDeleteLobby = async () => {
@@ -115,13 +81,11 @@ export default function LobbySidebar({ user, loading, error }: LobbySidebarProps
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();
-      if (!response.ok)
-        throw new Error(data.message || "Erro ao atualizar a lobby");
+      if (!response.ok) throw new Error(data.message || "Erro ao atualizar a lobby");
 
       alert(data.message);
 
       if (socket && userLobby?.lobby?.id) {
-        console.log("LobbySidebar: Emitindo leaveLobbyRoom para a lobby:", userLobby.lobby.id);
         socket.emit("leaveLobbyRoom", userLobby.lobby.id);
       }
       refresh();
@@ -142,8 +106,7 @@ export default function LobbySidebar({ user, loading, error }: LobbySidebarProps
         }
       );
       const data = await response.json();
-      if (!response.ok)
-        throw new Error(data.message || "Erro ao expulsar jogador");
+      if (!response.ok) throw new Error(data.message || "Erro ao expulsar jogador");
       alert(data.message);
       refresh();
     } catch (err: any) {
@@ -190,46 +153,62 @@ export default function LobbySidebar({ user, loading, error }: LobbySidebarProps
   }
 
   const { lobby } = userLobby;
-  // Usa o type assertion para garantir que players está como ILobbyPlayer[]
-  const activePlayers = lobby.players.filter(
-    (player) => player.left_at === null
-  ) as ILobbyPlayer[];
+  const activePlayers = (lobby.players || []).filter((player) => !player.left_at) as ILobbyPlayer[];
+  const isOwner = user?.id === lobby.owner.id;
+  const occupancy = Math.min(1, activePlayers.length / (lobby.maxPlayers || 1));
 
   return (
-    <div className="bg-gray-800 p-4 rounded-md shadow-sm text-white space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-600">
-          {lobby.title}
-        </h3>
-        <div className="flex items-center space-x-2">
-          <Gamepad className="text-purple-400 w-7 h-7" />
-          <span className="text-sm text-gray-300">
-            {lobby.activityType}
-          </span>
+    <div className="bg-gray-900 p-4 rounded-xl shadow-sm text-white space-y-4 border border-white/5">
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <p className="text-[11px] uppercase tracking-[0.08em] text-white/60">Minha Lobby</p>
+          <h3 className="text-2xl font-bold">{lobby.title}</h3>
+          <div className="flex items-center gap-2 text-xs text-white/60 mt-1">
+            <Gamepad className="w-4 h-4" />
+            <span>{lobby.activityType?.name}</span>
+          </div>
+        </div>
+        <div className="text-right">
+          <p className="text-xs text-white/60">Players</p>
+          <p className="text-lg font-semibold">{activePlayers.length}/{lobby.maxPlayers}</p>
         </div>
       </div>
 
-      <div className="flex items-center space-x-3">
-        <Users className="w-6 h-6 text-gray-300" />
-        <p className="text-sm text-gray-300">
-          {activePlayers.length}/{lobby.maxPlayers} Jogadores
-        </p>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between text-xs text-white/70">
+          <span>Ocupação</span>
+          <span>{Math.round(occupancy * 100)}%</span>
+        </div>
+        <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-cyan-400"
+            style={{ width: `${occupancy * 100}%` }}
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-2 text-xs text-white/70">
+          <div className="rounded-lg border border-white/10 px-3 py-2">
+            <p className="text-white/50">Nível</p>
+            <p className="font-semibold text-white">{lobby.minLevel} - {lobby.maxLevel || '∞'}</p>
+          </div>
+          <div className="rounded-lg border border-white/10 px-3 py-2">
+            <p className="text-white/50">Máx. jogadores</p>
+            <p className="font-semibold text-white">{lobby.maxPlayers}</p>
+          </div>
+        </div>
       </div>
 
-      <div className="space-y-2 max-h-32 overflow-y-auto">
+      <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
         {activePlayers.map((player: ILobbyPlayer) => {
-          const isLeader = player.isLeader;
+          const isLeaderPlayer = player.isLeader || player.character?.id === lobby.owner.id;
           return (
             <div
               key={player.id}
-              className={`flex items-center p-2 rounded transition-all duration-200 ${
-                isLeader
-                  ? "bg-gray-700 border border-yellow-400"
-                  : "bg-gray-700 hover:bg-gray-600"
+              className={`flex items-center p-2 rounded-lg border border-white/10 bg-white/5 ${
+                isLeaderPlayer ? "ring-1 ring-yellow-400/60" : ""
               }`}
             >
               <div className="flex items-center gap-3 flex-1 min-w-[140px]">
-                {isLeader ? (
+                {isLeaderPlayer ? (
                   <Image
                     src="/images/geral-icons/Shared_Lider_Icon.gif"
                     alt="Líder da Party"
@@ -244,25 +223,22 @@ export default function LobbySidebar({ user, loading, error }: LobbySidebarProps
                     height={15}
                   />
                 )}
-                <span className="font-medium">{player.character.name}</span>
+                <div>
+                  <p className="font-semibold">{player.character.name}</p>
+                  <p className="text-xs text-white/60">{player.character.vocation}</p>
+                </div>
               </div>
-              <div className="w-32 text-sm text-gray-300 text-center">
-                {player.character.vocation}
-              </div>
-              <div className="flex items-center gap-1 w-24 justify-end">
+              <div className="flex items-center gap-1 w-20 justify-end text-sm text-white/80">
                 <Image
                   src="/images/geral-icons/XP_Boost.gif"
                   alt="XP Boost"
-                  width={20}
-                  height={20}
+                  width={18}
+                  height={18}
                 />
-                <span className="text-sm text-gray-300">
-                  {player.character.level || "-"}
-                </span>
+                <span>{player.character.level || "-"}</span>
               </div>
               <div className="w-12 flex justify-end">
-                {/* Usa a flag isOwner em vez de comparar com userId */}
-                {(user?.id === lobby.owner.id) && !isLeader ? (
+                {isOwner && !isLeaderPlayer ? (
                   <Button
                     variant="destructive"
                     onClick={() => handleKickPlayer(player.character.id)}
@@ -277,21 +253,26 @@ export default function LobbySidebar({ user, loading, error }: LobbySidebarProps
             </div>
           );
         })}
+        {activePlayers.length === 0 && (
+          <p className="text-center text-white/60 text-sm">Sem jogadores ainda.</p>
+        )}
       </div>
 
-      <div className="flex justify-end space-x-3">
-        {(user?.id === lobby.owner.id) ? (
-          <Button
-            variant="destructive"
-            className="bg-gradient-to-r from-red-500 to-pink-600"
-            onClick={handleLeaveOrDeleteLobby}
-          >
-            <Trash2 className="w-5 h-5 mr-2" /> Excluir Lobby
-          </Button>
+      <div className="flex justify-between gap-3">
+        {isOwner ? (
+          <>
+            <Button
+              variant="destructive"
+              className="bg-gradient-to-r from-red-500 to-pink-600 flex-1"
+              onClick={handleLeaveOrDeleteLobby}
+            >
+              <Trash2 className="w-5 h-5 mr-2" /> Fechar Lobby
+            </Button>
+          </>
         ) : (
           <Button
             variant="destructive"
-            className="bg-gradient-to-r from-purple-500 to-blue-600"
+            className="bg-gradient-to-r from-purple-500 to-blue-600 flex-1"
             onClick={handleLeaveOrDeleteLobby}
           >
             <LogOut className="w-5 h-5 mr-2" /> Sair da Lobby

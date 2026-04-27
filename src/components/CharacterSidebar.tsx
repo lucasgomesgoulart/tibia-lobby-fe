@@ -3,10 +3,10 @@
 import { useState, useEffect } from "react";
 import CharacterRegistrationModal from "@/components/CharacterRegistrationModal";
 import { Button } from "@/components/ui/button";
-import API_BASE_URL from "@/apiConfig.js";
 import { FaCheckCircle } from "react-icons/fa";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { IUser } from "@/hooks/useUser";
+import { useCharacters } from "@/hooks/useCharacters";
 
 interface CharacterSidebarProps {
   user: IUser | null;
@@ -14,39 +14,21 @@ interface CharacterSidebarProps {
   error: string;
 }
 
-interface Character {
-  id: string;
-  name: string;
-  vocation: "KNIGHT" | "PALADIN" | "DRUID" | "SORCERER";
-  level: number;
-  serverType: "GLOBAL" | "OTSERVER";
-  world?: {
-    name: string;
-    isGlobal: boolean;
-  };
-  otServer?: {
-    name: string;
-  };
-}
-
 interface VocationIcons {
   [key: string]: string;
 }
 
 export default function CharacterSidebar({ user, loading, error }: CharacterSidebarProps) {
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const { characters, loading: charactersLoading, error: charactersError, fetchCharacters } = useCharacters();
+
+  useEffect(() => {
+    fetchCharacters();
+  }, [isModalOpen, fetchCharacters]);
 
   if (loading) return <p>Carregando characters...</p>;
   if (error) return <p>{error}</p>;
   if (!user) return <p>Nenhum usuário logado.</p>;
-
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-  const [characters, setCharacters] = useState<Character[]>([]);
-  const [userLogged, setUserLogged] = useState<boolean>(false);
-  const [isFetchingTibiaData, setIsFetchingTibiaData] = useState<boolean>(false);
-  const [tibiaCharacterData, setTibiaCharacterData] = useState<any>(null);
-  const [characterName, setCharacterName] = useState<string>("");
-  const [isGlobal, setIsGlobal] = useState<boolean>(false);
-  const [apiError, setApiError] = useState<string | null>(null);
 
   const vocationIcons: VocationIcons = {
     KNIGHT: "/images/voc-icons/Grand_Sanguine_Blade.gif",
@@ -55,73 +37,30 @@ export default function CharacterSidebar({ user, loading, error }: CharacterSide
     SORCERER: "/images/voc-icons/Wand_of_Inferno.gif",
   };
 
-  useEffect(() => {
-    const fetchCharacters = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/characters`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        });
-        const data = await response.json();
-        if (response.ok) {
-          setCharacters(data.data || []);
-          setUserLogged(true);
-          localStorage.setItem('characters', JSON.stringify(data));
-        } else {
-          setUserLogged(false);
-        }
-      } catch (error) {
-        console.error("Erro ao buscar personagens:", error);
-        setUserLogged(false);
-      }
-    };
-
-    fetchCharacters();
-  }, [isModalOpen]);
-
-  const fetchTibiaCharacterData = async () => {
-    if (!characterName.trim()) return;
-
-    setIsFetchingTibiaData(true);
-    setApiError(null);
-
-    try {
-      const response = await fetch(`https://api.tibiadata.com/v4/character/${encodeURIComponent(characterName)}`);
-      const data = await response.json();
-
-      if (response.ok && data.character) {
-        setTibiaCharacterData(data.character.character);
-      } else {
-        throw new Error("Personagem não encontrado na API do Tibia.");
-      }
-    } catch (error: any) {
-      setApiError(error.message || "Erro ao buscar dados do personagem.");
-    } finally {
-      setIsFetchingTibiaData(false);
-    }
-  };
-
   return (
-    <div className="flex flex-col h-full p-2 relative rounded-lg shadow-md">
-      <h2 className="text-white text-xl font-bold mb-4">Personagens</h2>
-
-      {isGlobal && (
-        <p className="text-red-500 text-center text-sm mb-2">
-          Os dados do personagem serão buscados automaticamente da API do Tibia.
-        </p>
-      )}
+    <div className="flex flex-col h-full p-3 relative rounded-xl shadow-md border border-white/5 bg-gray-900">
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <p className="text-[11px] uppercase tracking-[0.08em] text-white/60">Meus personagens</p>
+          <h2 className="text-white text-xl font-bold">Selecione para entrar</h2>
+        </div>
+        <Button className="bg-blue-600 text-white hover:bg-blue-700" onClick={() => setIsModalOpen(true)}>
+          Cadastrar
+        </Button>
+      </div>
 
       <div className="flex-1 overflow-y-auto space-y-2">
-        {!userLogged ? (
-          <p className="text-gray-300 text-center">Você precisa fazer login para visualizar seus personagens.</p>
+        {charactersLoading ? (
+          <p className="text-gray-300 text-center">Carregando personagens...</p>
+        ) : charactersError ? (
+          <p className="text-red-500 text-center">{charactersError}</p>
         ) : characters.length === 0 ? (
           <p className="text-gray-300 text-center">Nenhum personagem cadastrado.</p>
         ) : (
           characters.map((char) => (
             <div
               key={char.id}
-              className={`mr-3 bg-gray-800 text-white p-3 rounded-md shadow-sm flex justify-between items-center relative ${
+              className={`bg-gray-800 text-white p-3 rounded-lg shadow-sm flex justify-between items-center relative border border-white/5 ${
                 char.serverType === "GLOBAL" ? "border border-yellow-400" : ""
               }`}
             >
@@ -136,7 +75,9 @@ export default function CharacterSidebar({ user, loading, error }: CharacterSide
                 </div>
               </div>
               <div className="flex items-center space-x-1">
-                {char.level > 0 && <span className="text-blue-400 font-medium text-sm">Level: {char.level}</span>}
+                {char.level != null && Number(char.level) > 0 && (
+                  <span className="text-blue-400 font-medium text-sm">Level: {char.level}</span>
+                )}
                 {char.serverType === "GLOBAL" && (
                   <Tooltip.Root>
                     <Tooltip.Trigger asChild>
@@ -158,24 +99,17 @@ export default function CharacterSidebar({ user, loading, error }: CharacterSide
         )}
       </div>
 
-      {userLogged && (
-        <Button className="w-full bg-blue-600 text-white hover:bg-blue-700 mt-4" onClick={() => setIsModalOpen(true)}>
-          Cadastrar Personagem
-        </Button>
-      )}
+      <Button className="w-full bg-blue-600 text-white hover:bg-blue-700 mt-4" onClick={() => setIsModalOpen(true)}>
+        Cadastrar Personagem
+      </Button>
 
       <CharacterRegistrationModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        isGlobal={isGlobal}
-        setIsGlobal={setIsGlobal}
-        tibiaCharacterData={tibiaCharacterData}
-        fetchTibiaCharacterData={fetchTibiaCharacterData}
-        isFetchingTibiaData={isFetchingTibiaData}
-        characterName={characterName}
-        setCharacterName={setCharacterName}
-        apiError={apiError}
-        hideManualInputs={isGlobal}
+        onCharacterCreated={() => {
+          setIsModalOpen(false);
+          fetchCharacters();
+        }}
       />
     </div>
   );

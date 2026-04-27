@@ -28,6 +28,7 @@ export interface AuthLoginPayload {
 }
 
 export interface AuthLoginResponse {
-  token: string;
+  access_token: string;
+  expiresIn: number;
   userId: string;
 }

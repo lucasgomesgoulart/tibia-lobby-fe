@@ -1,12 +1,6 @@
 import { api } from './client';
-import { Character } from '@/types/character';
-
-export interface CharactersResponse {
-  data: Character[];
-}
-
 export const charactersApi = {
-  list: () => api.get<CharactersResponse>('/characters'),
+  list: () => api.get('/characters'),
 };
 
 export default charactersApi;

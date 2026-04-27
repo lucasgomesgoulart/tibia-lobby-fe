@@ -1,24 +1,22 @@
 'use client';
 
-import API_BASE_URL from "@/apiConfig";
 import LayoutNoSidebar from "@/components/LayoutNoSidebar";
 import UserProfile from "@/components/UserProfile";
+import { usersApi } from "@/lib/api/users";
 import { useEffect, useState } from "react";
 import { FaSpinner } from "react-icons/fa";
 
 export default function ProfilePage() {
-  const [user, setUser] = useState(null);
-  const [error, setError] = useState(null);
+  const [user, setUser] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function getInfo() {
       try {
-        const response = await fetch(`${API_BASE_URL}/users/me`);
-        if (!response.ok) throw new Error('Falha ao buscar os dados do usuário');
-        const userData = await response.json();
-        setUser(userData);
-      } catch (err) {
+        const userData = await usersApi.me();
+        setUser(userData as any);
+      } catch (err: any) {
         console.error('Erro ao buscar os dados do usuário:', err);
         setError(err.message);
       } finally {

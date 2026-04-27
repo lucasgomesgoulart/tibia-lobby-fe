@@ -10,7 +10,7 @@ import API_BASE_URL from "@/apiConfig";
 
 interface LobbyFilters {
   title?: string;
-  activityType?: string;
+  activityTypeId?: string;
   minLevel?: number;
   maxLevel?: number;
   minPlayers?: number;
@@ -53,7 +53,7 @@ export default function LobbyFiltersComponent({ onFilter }: { onFilter: (filtere
   const handleSearch = async () => {
     try {
       const queryParams = new URLSearchParams(filters as Record<string, string>).toString();
-      const response = await fetch(`${API_BASE_URL}/lobbies?${queryParams}`, {
+      const response = await fetch(`${API_BASE_URL}/lobby?${queryParams}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -68,7 +68,7 @@ export default function LobbyFiltersComponent({ onFilter }: { onFilter: (filtere
   const clearFilters = async () => {
     setFilters({});
     try {
-      const response = await fetch(`${API_BASE_URL}/lobbies`, {
+      const response = await fetch(`${API_BASE_URL}/lobby`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -98,14 +98,14 @@ export default function LobbyFiltersComponent({ onFilter }: { onFilter: (filtere
         <div className="grid grid-cols-2 gap-4 bg-gray-800 p-4 rounded-md shadow-md mt-3 mb-1">
           <Input name="title" placeholder='Título da lobby' onChange={handleChange} className="w-full bg-gray-700" />
 
-          <div>
-            <select name="activityType" onChange={handleChange} className="w-full bg-gray-700 text-white p-2 rounded-md">
-              <option value="">Selecione um tipo de atividade</option>
-              {activityTypes.map((type) => (
-                <option key={type} value={type}>{type}</option>
-              ))}
-            </select>
-          </div>
+            <div>
+              <select name="activityTypeId" onChange={handleChange} className="w-full bg-gray-700 text-white p-2 rounded-md">
+                <option value="">Selecione um tipo de atividade</option>
+                {activityTypes.map((type: any) => (
+                  <option key={type.id || type} value={type.id || type}>{type.name || type}</option>
+                ))}
+              </select>
+            </div>
 
           <div>
             <label className="block text-gray-300">Mínimo de Jogadores: {filters.minPlayers || 0}</label>
